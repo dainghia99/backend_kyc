@@ -1,0 +1,12 @@
+flask
+flask-cors
+flask-sqlalchemy
+python-dotenv
+opencv-python
+numpy
+mediapipe
+pytesseract
+bcrypt
+PyJWT
+Pillow
+pymysql
