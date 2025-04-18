@@ -73,7 +73,7 @@ def create_session(user):
 def invalidate_session(token):
     session = UserSession.query.filter_by(token=token).first()
     if session:
-        session.is_active = False
+        db.session.delete(session)  # Delete the session record
         db.session.commit()
         
 def invalidate_all_sessions(user_id):
