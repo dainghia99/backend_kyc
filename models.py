@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -21,7 +21,7 @@ class UserSession(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    
+
 class KYCVerification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -33,6 +33,16 @@ class KYCVerification(db.Model):
     status = db.Column(db.String(20), default='pending')
     identity_card_front = db.Column(db.String(200))
     identity_card_back = db.Column(db.String(200))
+    attempt_count = db.Column(db.Integer, default=0)
+    last_attempt_at = db.Column(db.DateTime, nullable=True)
+    rejection_reason = db.Column(db.String(200), nullable=True)
+
+    def increment_attempt(self):
+        if self.attempt_count is None:
+            self.attempt_count = 1
+        else:
+            self.attempt_count += 1
+        self.last_attempt_at = datetime.utcnow()
 
 class IdentityInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)

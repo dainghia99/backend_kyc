@@ -8,14 +8,58 @@ from middleware.error_handler import register_error_handlers
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import platform
+import subprocess
+
+def configure_tesseract():
+    """Cấu hình Tesseract OCR khi khởi động ứng dụng"""
+    system = platform.system()
+    tessdata_path = None
+
+    if system == "Windows":
+        # Kiểm tra các đường dẫn phổ biến trên Windows
+        possible_paths = [
+            r'C:\Program Files\Tesseract-OCR\tessdata',
+            r'C:\Program Files (x86)\Tesseract-OCR\tessdata',
+            r'C:\Tesseract-OCR\tessdata'
+        ]
+
+        for path in possible_paths:
+            if os.path.exists(path):
+                tessdata_path = path
+                break
+    else:
+        # Linux/macOS
+        if os.path.exists('/usr/share/tesseract-ocr/tessdata'):
+            tessdata_path = '/usr/share/tesseract-ocr/tessdata'
+        elif os.path.exists('/usr/share/tessdata'):
+            tessdata_path = '/usr/share/tessdata'
+
+    if tessdata_path:
+        # Thiết lập biến môi trường TESSDATA_PREFIX
+        os.environ['TESSDATA_PREFIX'] = tessdata_path
+        print(f"Thiết lập TESSDATA_PREFIX = {tessdata_path}")
+
+        # Kiểm tra file ngôn ngữ tiếng Việt
+        vie_file = os.path.join(tessdata_path, 'vie.traineddata')
+        if not os.path.exists(vie_file):
+            print(f"Cảnh báo: Không tìm thấy file ngôn ngữ tiếng Việt: {vie_file}")
+            print("Vui lòng chạy script download_vie_language.py để tải file ngôn ngữ tiếng Việt")
+        else:
+            print(f"Tìm thấy file ngôn ngữ tiếng Việt: {vie_file}")
+    else:
+        print("Cảnh báo: Không tìm thấy thư mục tessdata. Vui lòng cài đặt Tesseract OCR.")
 
 def create_app(config_name='development'):
+    # Cấu hình Tesseract OCR
+    configure_tesseract()
+
     app = Flask(__name__)
-    
+
     # Load configuration
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
-    
+
     # Set up logging
     if not os.path.exists('logs'):
         os.mkdir('logs')
@@ -27,7 +71,7 @@ def create_app(config_name='development'):
     app.logger.addHandler(file_handler)
     app.logger.setLevel(logging.INFO)
     app.logger.info('Application startup')
-    
+
     # Initialize CORS
     CORS(app, resources={
         r"/*": {
@@ -36,23 +80,23 @@ def create_app(config_name='development'):
             "allow_headers": ["Content-Type", "Authorization"]
         }
     })
-    
+
     # Initialize database
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        
+
     # Register error handlers
     register_error_handlers(app)
-        
+
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(kyc_bp, url_prefix='/kyc')
-    
+
     @app.route('/')
     def index():
         return {"message": "KYC API Server"}
-        
+
     return app
 
 if __name__ == '__main__':

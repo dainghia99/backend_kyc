@@ -10,3 +10,6 @@ scipy==1.7.1
 python-dotenv==0.19.0
 Werkzeug==2.0.1
 pytesseract==0.3.8
+Pillow==9.5.0  # Xử lý hình ảnh, cần thiết cho pytesseract
+requests==2.31.0  # Gửi HTTP requests
+pandas==2.0.3  # Xử lý dữ liệu

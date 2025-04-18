@@ -36,3 +36,53 @@ TypeError: can't compare offset-naive and offset-aware datetimes
  [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:45]
 2025-04-18 11:25:40,755 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
 2025-04-18 11:25:44,743 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 13:47:57,229 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 13:48:01,459 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:05:40,417 ERROR: Unhandled error: can't compare offset-naive and offset-aware datetimes [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:44]
+2025-04-18 14:05:40,433 ERROR: Traceback (most recent call last):
+  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "D:\do_an_tot_nghiep\thuc_hanh\backend\utils\auth.py", line 28, in decorated
+    if session.expires_at < datetime.now(timezone.utc):
+TypeError: can't compare offset-naive and offset-aware datetimes
+ [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:45]
+2025-04-18 14:07:12,179 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:07:20,435 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:07:52,063 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:08:06,788 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:08:41,878 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:09:10,314 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:10:18,589 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:10:22,945 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:11:01,081 ERROR: Unhandled error: (pymysql.err.OperationalError) (1054, "Unknown column 'kyc_verification.blink_count' in 'field list'")
+[SQL: SELECT kyc_verification.id AS kyc_verification_id, kyc_verification.user_id AS kyc_verification_user_id, kyc_verification.selfie_path AS kyc_verification_selfie_path, kyc_verification.liveness_score AS kyc_verification_liveness_score, kyc_verification.blink_count AS kyc_verification_blink_count, kyc_verification.created_at AS kyc_verification_created_at, kyc_verification.verified_at AS kyc_verification_verified_at, kyc_verification.status AS kyc_verification_status, kyc_verification.identity_card_front AS kyc_verification_identity_card_front, kyc_verification.identity_card_back AS kyc_verification_identity_card_back, kyc_verification.attempt_count AS kyc_verification_attempt_count, kyc_verification.last_attempt_at AS kyc_verification_last_attempt_at, kyc_verification.rejection_reason AS kyc_verification_rejection_reason 
+FROM kyc_verification 
+WHERE kyc_verification.user_id = %(user_id_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'user_id_1': 5, 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:44]
+2025-04-18 14:13:36,258 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:13:41,461 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:16:39,498 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:16:58,662 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:17:04,553 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:18:46,362 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:18:50,889 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:27:47,918 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:27:52,524 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:36:33,469 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 14:36:38,439 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 15:36:34,062 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 15:36:38,661 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 15:44:14,772 ERROR: ID card verification error: tesseract is not installed or it's not in your PATH. See README file for more information. [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:146]
+2025-04-18 16:01:12,268 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 16:01:17,163 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:29]
+2025-04-18 16:03:59,608 ERROR: ID card verification error: (1, 'Error opening data file C:\\Program Files\\Tesseract-OCR/tessdata/vie.traineddata Please make sure the TESSDATA_PREFIX environment variable is set to your "tessdata" directory. Failed loading language \'vie\' Tesseract couldn\'t load any languages! Could not initialize tesseract.') [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:147]
+2025-04-18 16:03:59,608 ERROR: Tesseract OCR error: (1, 'Error opening data file C:\\Program Files\\Tesseract-OCR/tessdata/vie.traineddata Please make sure the TESSDATA_PREFIX environment variable is set to your "tessdata" directory. Failed loading language \'vie\' Tesseract couldn\'t load any languages! Could not initialize tesseract.') [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:157]
+2025-04-18 16:23:11,031 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:73]
+2025-04-18 16:25:21,482 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:73]
+2025-04-18 16:25:26,522 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:73]
+2025-04-18 16:38:05,176 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:73]
+2025-04-18 16:38:14,194 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:73]
