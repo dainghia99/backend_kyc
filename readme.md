@@ -2,6 +2,8 @@
 
 ## Cài đặt môi trường ảo (venv)
 
+## Khuyến khích sử dụng `Python 3.10`
+
 1. Tạo môi trường ảo:
 
     ```bash
@@ -25,21 +27,23 @@
     pip install -r requirements.txt
     ```
 
-## Cài đặt Tesseract OCR
+## Cài đặt EasyOCR (Khuyến nghị)
 
-1. Cài đặt Tesseract OCR:
+1. Cài đặt EasyOCR và tải mô hình ngôn ngữ:
 
     ```bash
-    python setup_tesseract.py
+    python setup_easyocr.py
     ```
 
-2. Cài đặt ngôn ngữ tiếng Việt:
+2. Kiểm tra cài đặt:
+
     ```bash
-    python download_vie_language.py
+    python test_easyocr.py
     ```
-3. Kiểm tra cài đặt:
+
+3. Để biết thêm thông tin, xem tài liệu EasyOCR:
     ```bash
-    python test_tesseract.py
+    cat README_EASYOCR.md
     ```
 
 ### Lưu ý quan trọng:
