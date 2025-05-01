@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify, current_app
 from models import db, KYCVerification, User, IdentityInfo
 from utils.auth import token_required
 from utils.liveness import process_video_for_liveness
-from utils.id_card import process_id_card
+# Thay thế Tesseract OCR bằng EasyOCR
+from utils.easyocr_utils import process_id_card
 from middleware.rate_limit import kyc_rate_limit
 from middleware.security import validate_file_extension, validate_file_size, sanitize_file_name
 from datetime import datetime
@@ -53,21 +54,32 @@ def verify_liveness(current_user):
         verification.blink_count = results['blink_count']
         verification.last_attempt_at = datetime.utcnow()
 
+        # Kiểm tra xem có yêu cầu bỏ qua kiểm tra nháy mắt không
+        skip_blink_check = request.args.get('skip_blink_check', 'false').lower() == 'true'
+
+        # Chỉ cho phép bỏ qua kiểm tra nháy mắt trong môi trường phát triển hoặc nếu người dùng đã thử nhiều lần
+        allow_skip = current_app.config.get('ENV') == 'development' or verification.attempt_count >= 5
+
         if results['liveness_score'] > current_app.config['MIN_LIVENESS_SCORE']:
-            if results['blink_count'] >= current_app.config['MIN_BLINK_COUNT']:
+            # Nếu cho phép bỏ qua kiểm tra nháy mắt và người dùng yêu cầu bỏ qua
+            if (allow_skip and skip_blink_check) or results['blink_count'] >= current_app.config['MIN_BLINK_COUNT']:
                 verification.status = 'verified'
                 verification.verified_at = datetime.utcnow()
                 current_user.kyc_status = 'verified'
                 current_user.kyc_verified_at = datetime.utcnow()
-                message = 'Xác thực thành công'
+
+                if allow_skip and skip_blink_check and results['blink_count'] < current_app.config['MIN_BLINK_COUNT']:
+                    message = 'Xác thực thành công (đã bỏ qua kiểm tra nháy mắt)'
+                else:
+                    message = 'Xác thực thành công'
             else:
                 verification.status = 'failed'
-                verification.rejection_reason = 'Không phát hiện đủ số lần nháy mắt'
-                message = 'Không phát hiện đủ số lần nháy mắt'
+                verification.rejection_reason = f'Không phát hiện đủ số lần nháy mắt (phát hiện {results["blink_count"]} lần, yêu cầu {current_app.config["MIN_BLINK_COUNT"]} lần)'
+                message = f'Không phát hiện đủ số lần nháy mắt (phát hiện {results["blink_count"]} lần, yêu cầu {current_app.config["MIN_BLINK_COUNT"]} lần)'
         else:
             verification.status = 'failed'
-            verification.rejection_reason = 'Điểm số liveness không đạt yêu cầu'
-            message = 'Xác thực không thành công'
+            verification.rejection_reason = f'Điểm số liveness không đạt yêu cầu (điểm số: {results["liveness_score"]:.2f}, yêu cầu: {current_app.config["MIN_LIVENESS_SCORE"]:.2f})'
+            message = f'Xác thực không thành công: Điểm số liveness {results["liveness_score"]:.2f} thấp hơn ngưỡng yêu cầu {current_app.config["MIN_LIVENESS_SCORE"]:.2f}'
 
         db.session.add(verification)
         db.session.commit()
@@ -82,7 +94,22 @@ def verify_liveness(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Liveness verification error: {str(e)}")
-        return jsonify({'error': 'Không thể xác thực. Vui lòng thử lại.'}), 500
+
+        # Thêm thông tin chi tiết về lỗi để giúp người dùng hiểu vấn đề
+        error_message = 'Không thể xác thực. Vui lòng thử lại.'
+
+        # Phân loại lỗi để cung cấp hướng dẫn cụ thể
+        if "face" in str(e).lower():
+            error_message = "Không thể phát hiện khuôn mặt rõ ràng. Vui lòng đảm bảo ánh sáng đầy đủ và giữ khuôn mặt ở giữa khung hình."
+        elif "blink" in str(e).lower():
+            error_message = "Không thể phát hiện nháy mắt. Vui lòng nháy mắt rõ ràng và tự nhiên."
+        elif "video" in str(e).lower():
+            error_message = "Lỗi khi xử lý video. Vui lòng thử lại với ánh sáng tốt hơn."
+
+        return jsonify({
+            'error': error_message,
+            'details': str(e) if current_app.config.get('DEBUG', False) else None
+        }), 500
 
 @kyc_bp.route('/verify/id-card', methods=['POST'])
 @token_required
@@ -116,6 +143,34 @@ def verify_id_card(current_user):
 
         # Process ID card image
         id_info = process_id_card(filepath, is_front)
+
+        # Kiểm tra xem có trích xuất được các thông tin cần thiết không
+        required_fields = ['id_number', 'full_name'] if is_front else ['residence', 'issue_date', 'expiry_date']
+        missing_fields = [field for field in required_fields if field not in id_info]
+
+        if missing_fields:
+            # Nếu thiếu thông tin cần thiết, trả về lỗi và yêu cầu upload lại
+            missing_fields_vn = {
+                'id_number': 'Số CCCD',
+                'full_name': 'Họ và tên',
+                'residence': 'Nơi cư trú',
+                'issue_date': 'Ngày cấp',
+                'expiry_date': 'Ngày hết hạn'
+            }
+            missing_fields_str = ', '.join([missing_fields_vn[field] for field in missing_fields])
+
+            # Lưu lại thông tin về việc không trích xuất được thông tin
+            current_app.logger.warning(f"Không trích xuất được thông tin: {missing_fields_str} từ ảnh CCCD {'mặt trước' if is_front else 'mặt sau'}")
+
+            # Xóa file ảnh đã upload vì không sử dụng được
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            return jsonify({
+                'error': f"Không thể trích xuất thông tin: {missing_fields_str}",
+                'need_reupload': True,
+                'message': "Vui lòng chụp lại ảnh CCCD rõ nét hơn, đảm bảo đủ ánh sáng và không bị lóa."
+            }), 400
 
         # Update verification record
         if is_front:
@@ -173,10 +228,10 @@ def verify_id_card(current_user):
         error_message = "Có lỗi xảy ra khi xác thực ID card. Vui lòng thử lại."
         error_code = 500
 
-        # Xử lý lỗi Tesseract OCR
-        if "tesseract" in str(e).lower() or "not installed" in str(e).lower() or "path" in str(e).lower():
-            error_message = "Lỗi hệ thống OCR: Tesseract OCR chưa được cài đặt hoặc cấu hình đúng. Vui lòng liên hệ quản trị viên."
-            current_app.logger.error(f"Tesseract OCR error: {str(e)}")
+        # Xử lý lỗi EasyOCR
+        if "easyocr" in str(e).lower() or "not installed" in str(e).lower() or "reader" in str(e).lower():
+            error_message = "Lỗi hệ thống OCR: EasyOCR chưa được cài đặt hoặc cấu hình đúng. Vui lòng liên hệ quản trị viên."
+            current_app.logger.error(f"EasyOCR error: {str(e)}")
 
             # Trả về dữ liệu giả lập trong môi trường phát triển
             if current_app.config.get('ENV') == 'development':
@@ -190,7 +245,8 @@ def verify_id_card(current_user):
                         'place_of_origin': 'TP Hồ Chí Minh'
                     },
                     'back': {
-                        'place_of_residence': '123 Đường ABC, Quận 1, TP HCM',
+                        'residence': '123 Đường ABC, Quận 1, TP HCM',
+                        'issue_date': '01/01/2020',
                         'expiry_date': '01/01/2030'
                     }
                 }
@@ -198,7 +254,7 @@ def verify_id_card(current_user):
                 return jsonify({
                     'message': 'Tải lên thành công (dữ liệu giả lập)',
                     'id_info': mock_data['front'] if is_front else mock_data['back'],
-                    'warning': 'Tesseract OCR chưa được cài đặt. Đang sử dụng dữ liệu giả lập.'
+                    'warning': 'EasyOCR chưa được cài đặt. Đang sử dụng dữ liệu giả lập.'
                 }), 200
 
         # Xử lý lỗi OCR khác
