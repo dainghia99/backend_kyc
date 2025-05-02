@@ -119,7 +119,7 @@ def verify_id_card(current_user):
         id_info = process_id_card(filepath, is_front)
 
         # Kiểm tra xem có trích xuất được các thông tin cần thiết không
-        required_fields = ['id_number', 'full_name'] if is_front else ['residence', 'issue_date', 'expiry_date']
+        required_fields = ['id_number', 'full_name'] if is_front else ['issue_date', 'expiry_date']
         missing_fields = [field for field in required_fields if field not in id_info]
 
         if missing_fields:
@@ -197,7 +197,6 @@ def verify_id_card(current_user):
                         'place_of_origin': 'TP Hồ Chí Minh'
                     },
                     'back': {
-                        'residence': '123 Đường ABC, Quận 1, TP HCM',
                         'issue_date': '01/01/2020',
                         'expiry_date': '01/01/2030'
                     }

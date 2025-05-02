@@ -45,7 +45,7 @@ def process_image_direct(current_user):
         id_info = process_id_card(full_path, is_front)
 
         # Kiểm tra xem có trích xuất được các thông tin cần thiết không
-        required_fields = ['id_number', 'full_name'] if is_front else ['residence', 'issue_date', 'expiry_date']
+        required_fields = ['id_number', 'full_name'] if is_front else ['issue_date', 'expiry_date']
         missing_fields = [field for field in required_fields if field not in id_info]
 
         if missing_fields:
@@ -136,7 +136,7 @@ def upload_and_process(current_user):
         id_info = process_id_card(filepath, is_front)
 
         # Kiểm tra xem có trích xuất được các thông tin cần thiết không
-        required_fields = ['id_number', 'full_name'] if is_front else ['residence', 'issue_date', 'expiry_date']
+        required_fields = ['id_number', 'full_name'] if is_front else ['issue_date', 'expiry_date']
         missing_fields = [field for field in required_fields if field not in id_info]
 
         if missing_fields:

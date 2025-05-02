@@ -377,68 +377,8 @@ def parse_id_info(text, is_front):
                 logger.info(f"Đã trích xuất nơi thường trú: {info['residence']}")
                 break
     else:
-        # Mặt sau CCCD - Tập trung vào 3 trường thông tin chính: Nơi cư trú, Ngày cấp, Ngày hết hạn
-
-        # 1. Trích xuất nơi cư trú (ưu tiên cao nhất)
-        residence_patterns = [
-            r'Nơi cư trú[/:]?(?:Place of residence)?:?\s*([^\n]+(?:\n[^\n]+)*)',
-            r'Cư trú[/:]?(?:Place of residence)?:?\s*([^\n]+(?:\n[^\n]+)*)',
-            r'Nơi thường trú[/:]?(?:Place of residence)?:?\s*([^\n]+(?:\n[^\n]+)*)',
-            r'Thường trú[/:]?(?:Place of residence)?:?\s*([^\n]+(?:\n[^\n]+)*)',
-            r'Place of residence:?\s*([^\n]+(?:\n[^\n]+)*)',
-            r'Nơi cư trú\s*/\s*Place of residence:?\s*([^\n]+(?:\n[^\n]+)*)'
-        ]
-
-        # Tìm kiếm nơi cư trú trong toàn bộ văn bản
-        residence_found = False
-        for pattern in residence_patterns:
-            residence_match = re.search(pattern, text, re.IGNORECASE)
-            if residence_match:
-                info['residence'] = residence_match.group(1).strip().replace('\n', ' ')
-                logger.info(f"Đã trích xuất nơi cư trú: {info['residence']}")
-                residence_found = True
-                break
-
-        # Nếu không tìm thấy nơi cư trú bằng regex, thử tìm dòng có chứa từ khóa liên quan
-        if not residence_found:
-            residence_keywords = ['nơi cư trú', 'cư trú', 'thường trú', 'địa chỉ', 'place of residence']
-            lines = text.split('\n')
-
-            for i, line in enumerate(lines):
-                for keyword in residence_keywords:
-                    if keyword.lower() in line.lower():
-                        # Nếu tìm thấy từ khóa, lấy dòng hiện tại và 2 dòng tiếp theo (nếu có)
-                        residence_text = line
-                        for j in range(1, 3):
-                            if i + j < len(lines) and lines[i + j].strip():
-                                residence_text += ' ' + lines[i + j].strip()
-
-                        # Loại bỏ từ khóa và dấu hai chấm nếu có
-                        for kw in residence_keywords:
-                            residence_text = re.sub(f'{kw}:?', '', residence_text, flags=re.IGNORECASE).strip()
-                            residence_text = re.sub(f'{kw}/place of residence:?', '', residence_text, flags=re.IGNORECASE).strip()
-
-                        info['residence'] = residence_text
-                        logger.info(f"Đã trích xuất nơi cư trú (phương pháp 2): {info['residence']}")
-                        residence_found = True
-                        break
-
-                if residence_found:
-                    break
-
-        # Nếu vẫn không tìm thấy, tìm kiếm dòng có chứa "Bản" hoặc "Mường" (phổ biến trong địa chỉ vùng cao)
-        if not residence_found:
-            address_keywords = ['bản', 'mường', 'xã', 'huyện', 'tỉnh', 'thành phố', 'quận', 'phường', 'thị xã', 'thị trấn']
-            lines = text.split('\n')
-
-            for line in lines:
-                if any(keyword.lower() in line.lower() for keyword in address_keywords):
-                    # Nếu dòng có vẻ như là địa chỉ
-                    if len(line.strip()) > 10:  # Đảm bảo đủ dài để là địa chỉ
-                        info['residence'] = line.strip()
-                        logger.info(f"Đã trích xuất nơi cư trú (phương pháp 3 - từ khóa địa chỉ): {info['residence']}")
-                        residence_found = True
-                        break
+        # Mặt sau CCCD - Tập trung vào 2 trường thông tin chính: Ngày cấp, Ngày hết hạn
+        # Đã loại bỏ phần trích xuất thông tin nơi cư trú theo yêu cầu
 
         # 2. Trích xuất ngày cấp với nhiều mẫu hơn
         issue_date_patterns = [
@@ -631,7 +571,7 @@ def parse_id_info(text, is_front):
     if is_front:
         required_fields = ['id_number', 'full_name', 'date_of_birth', 'gender', 'nationality']
     else:
-        required_fields = ['residence', 'issue_date', 'expiry_date']
+        required_fields = ['issue_date', 'expiry_date']
 
     missing_fields = [field for field in required_fields if field not in info]
 
@@ -676,7 +616,7 @@ def process_id_card(image_path, is_front):
         info = parse_id_info(text, is_front)
 
         # Nếu không trích xuất được thông tin cơ bản, thử lại với các phương pháp tiền xử lý khác
-        required_fields = ['id_number', 'full_name'] if is_front else ['residence', 'issue_date', 'expiry_date']
+        required_fields = ['id_number', 'full_name'] if is_front else ['issue_date', 'expiry_date']
         missing_fields = [field for field in required_fields if field not in info]
 
         if (is_front and ("id_number" not in info or "full_name" not in info)) or (not is_front and len(missing_fields) > 0):
