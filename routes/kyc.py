@@ -54,24 +54,13 @@ def verify_liveness(current_user):
         verification.blink_count = results['blink_count']
         verification.last_attempt_at = datetime.utcnow()
 
-        # Kiểm tra xem có yêu cầu bỏ qua kiểm tra nháy mắt không
-        skip_blink_check = request.args.get('skip_blink_check', 'false').lower() == 'true'
-
-        # Chỉ cho phép bỏ qua kiểm tra nháy mắt trong môi trường phát triển hoặc nếu người dùng đã thử nhiều lần
-        allow_skip = current_app.config.get('ENV') == 'development' or verification.attempt_count >= 5
-
         if results['liveness_score'] > current_app.config['MIN_LIVENESS_SCORE']:
-            # Nếu cho phép bỏ qua kiểm tra nháy mắt và người dùng yêu cầu bỏ qua
-            if (allow_skip and skip_blink_check) or results['blink_count'] >= current_app.config['MIN_BLINK_COUNT']:
+            if results['blink_count'] >= current_app.config['MIN_BLINK_COUNT']:
                 verification.status = 'verified'
                 verification.verified_at = datetime.utcnow()
                 current_user.kyc_status = 'verified'
                 current_user.kyc_verified_at = datetime.utcnow()
-
-                if allow_skip and skip_blink_check and results['blink_count'] < current_app.config['MIN_BLINK_COUNT']:
-                    message = 'Xác thực thành công (đã bỏ qua kiểm tra nháy mắt)'
-                else:
-                    message = 'Xác thực thành công'
+                message = 'Xác thực thành công'
             else:
                 verification.status = 'failed'
                 verification.rejection_reason = f'Không phát hiện đủ số lần nháy mắt (phát hiện {results["blink_count"]} lần, yêu cầu {current_app.config["MIN_BLINK_COUNT"]} lần)'

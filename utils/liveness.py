@@ -30,8 +30,8 @@ def detect_blinks(video_path):
         Dictionary chứa kết quả phân tích
     """
     # Các tham số cho thuật toán phát hiện nháy mắt
-    EYE_AR_THRESH = 0.15  # Ngưỡng tỉ lệ khung mắt để phát hiện nháy mắt
-    EYE_AR_CONSEC_FRAMES = 1  # Số frame liên tiếp cần thiết để xác định nháy mắt
+    EYE_AR_THRESH = 0.13  # Ngưỡng tỉ lệ khung mắt để phát hiện nháy mắt (giảm xuống để nghiêm ngặt hơn)
+    EYE_AR_CONSEC_FRAMES = 2  # Số frame liên tiếp cần thiết để xác định nháy mắt (tăng lên để chính xác hơn)
 
     # Biến toàn cục để tính EAR trung bình
     global_ear_values = []
@@ -210,8 +210,8 @@ def detect_blinks(video_path):
     global_ear_values = []
 
     # Các tham số cho thuật toán phát hiện nháy mắt
-    EYE_AR_THRESH = 0.15  # Ngưỡng tỉ lệ khung mắt để phát hiện nháy mắt
-    EYE_AR_CONSEC_FRAMES = 1  # Số frame liên tiếp cần thiết để xác định nháy mắt
+    EYE_AR_THRESH = 0.13  # Ngưỡng tỉ lệ khung mắt để phát hiện nháy mắt (giảm xuống để nghiêm ngặt hơn)
+    EYE_AR_CONSEC_FRAMES = 2  # Số frame liên tiếp cần thiết để xác định nháy mắt (tăng lên để chính xác hơn)
 
     # Xử lý các frame có khuôn mặt để phát hiện nháy mắt
     for frame_index, enhanced_frame, gray, faces in face_frames:
@@ -277,13 +277,15 @@ def detect_blinks(video_path):
                 counter = 0
 
             # Phương pháp 2: Phát hiện nháy mắt khi EAR thấp hơn trung bình đáng kể
-            if ear < current_avg_ear * 0.8 and ear < 0.22:
+            # Tăng độ nghiêm ngặt của phương pháp 2
+            if ear < current_avg_ear * 0.7 and ear < 0.18:  # Giảm ngưỡng xuống để nghiêm ngặt hơn
                 # Phát hiện nháy mắt bằng phương pháp thứ hai
                 with open(os.path.join(debug_dir, "blinks_method2.txt"), "a", encoding="utf-8") as f:
                     f.write(f"Potential blink detected at frame {frame_index} using method 2: ear={ear:.4f}, avg_ear={current_avg_ear:.4f}\n")
 
-                # Tăng bộ đếm nháy mắt nếu chưa phát hiện bằng phương pháp khác
-                if counter == 0 and blink_counter == 0:
+                # Chỉ tăng bộ đếm nếu chưa phát hiện bằng phương pháp khác và có ít nhất 3 frame đã được xử lý
+                # Điều này giúp tránh phát hiện sai ở đầu video khi chưa có đủ dữ liệu
+                if counter == 0 and blink_counter == 0 and frame_count > 10:
                     blink_counter += 1
                     with open(os.path.join(debug_dir, "blinks.txt"), "a", encoding="utf-8") as f:
                         f.write(f"Blink #{blink_counter} detected at frame {frame_index} using method 2\n")
@@ -309,24 +311,65 @@ def detect_blinks(video_path):
                             break
 
                 # Nếu có sự thay đổi đột ngột của EAR (giảm rồi tăng), có thể là nháy mắt
-                if prev_ear is not None and prev_ear - ear > 0.03:
+                # Tăng ngưỡng thay đổi EAR để nghiêm ngặt hơn
+                if prev_ear is not None and prev_ear - ear > 0.05 and ear < 0.15:
                     # Phát hiện nháy mắt bằng phương pháp thứ ba
                     with open(os.path.join(debug_dir, "blinks_method3.txt"), "a", encoding="utf-8") as f:
                         f.write(f"Potential blink detected at frame {frame_index} using method 3: prev_ear={prev_ear:.4f}, current_ear={ear:.4f}\n")
 
-                    # Tăng bộ đếm nháy mắt nếu chưa phát hiện bằng phương pháp khác
-                    if counter == 0 and blink_counter == 0:
-                        blink_counter += 1
-                        with open(os.path.join(debug_dir, "blinks.txt"), "a", encoding="utf-8") as f:
-                            f.write(f"Blink #{blink_counter} detected at frame {frame_index} using method 3\n")
+                    # Chỉ tăng bộ đếm nếu chưa phát hiện bằng phương pháp khác và có ít nhất 10 frame đã được xử lý
+                    # Điều này giúp tránh phát hiện sai ở đầu video khi chưa có đủ dữ liệu
+                    if counter == 0 and blink_counter == 0 and frame_count > 15:
+                        # Kiểm tra thêm: EAR phải thấp hơn đáng kể so với trung bình
+                        if ear < current_avg_ear * 0.7:
+                            blink_counter += 1
+                            with open(os.path.join(debug_dir, "blinks.txt"), "a", encoding="utf-8") as f:
+                                f.write(f"Blink #{blink_counter} detected at frame {frame_index} using method 3\n")
 
     # Tính điểm số liveness
     avg_ear = total_ear / frame_count if frame_count > 0 else 0
     duration = total_frames / fps if fps > 0 else 0
     blink_rate = blink_counter / duration if duration > 0 else 0
 
+    # Thêm bước kiểm tra chéo để xác nhận nháy mắt thực sự
+    # Phân tích phân phối EAR để phát hiện nháy mắt thực sự
+    if len(global_ear_values) > 10:
+        # Sắp xếp các giá trị EAR
+        sorted_ear_values = sorted(global_ear_values)
+
+        # Tính phần trăm 10% giá trị EAR thấp nhất
+        lowest_10_percent = sorted_ear_values[:int(len(sorted_ear_values) * 0.1)]
+        lowest_10_percent_avg = sum(lowest_10_percent) / len(lowest_10_percent) if lowest_10_percent else 0
+
+        # Tính phần trăm 50% giá trị EAR trung bình
+        median_values = sorted_ear_values[int(len(sorted_ear_values) * 0.25):int(len(sorted_ear_values) * 0.75)]
+        median_avg = sum(median_values) / len(median_values) if median_values else 0
+
+        # Ghi log phân tích phân phối EAR
+        with open(os.path.join(debug_dir, "ear_distribution.txt"), "w", encoding="utf-8") as f:
+            f.write(f"Lowest 10% EAR average: {lowest_10_percent_avg:.4f}\n")
+            f.write(f"Median 50% EAR average: {median_avg:.4f}\n")
+            f.write(f"Ratio (lowest/median): {lowest_10_percent_avg/median_avg if median_avg > 0 else 0:.4f}\n")
+
+        # Nếu tỉ lệ giữa giá trị thấp nhất và trung bình quá cao (> 0.85),
+        # có thể không có nháy mắt thực sự (không có sự khác biệt đáng kể giữa các giá trị EAR)
+        if lowest_10_percent_avg / median_avg > 0.85 and blink_counter > 0:
+            # Ghi log cảnh báo
+            with open(os.path.join(debug_dir, "blink_verification.txt"), "w", encoding="utf-8") as f:
+                f.write("Cảnh báo: Có thể không có nháy mắt thực sự. Phân phối EAR quá đồng đều.\n")
+                f.write(f"Blink count trước khi điều chỉnh: {blink_counter}\n")
+
+            # Giảm số lần nháy mắt xuống 0 hoặc 1 tùy thuộc vào số lần đã phát hiện
+            if blink_counter > 3:
+                blink_counter = 1  # Vẫn cho 1 lần nháy mắt nếu đã phát hiện nhiều lần
+            else:
+                blink_counter = 0  # Không có nháy mắt nếu chỉ phát hiện ít lần
+
+            with open(os.path.join(debug_dir, "blink_verification.txt"), "a", encoding="utf-8") as f:
+                f.write(f"Blink count sau khi điều chỉnh: {blink_counter}\n")
+
     # Điều chỉnh ngưỡng nháy mắt dựa trên độ dài video
-    min_blinks = 1  # Chỉ yêu cầu tối thiểu 1 nháy mắt
+    min_blinks = 3  # Chỉ yêu cầu tối thiểu 1 nháy mắt
     max_blinks = 20  # Tăng giới hạn tối đa lên cao
 
     # Ghi log ngưỡng nháy mắt
@@ -344,11 +387,11 @@ def detect_blinks(video_path):
         # Nếu phát hiện ít nhất 1 nháy mắt, cho điểm tối đa
         blink_score = 1.0
     else:
-        # Nếu không phát hiện nháy mắt, vẫn cho điểm cơ bản
-        blink_score = 0.5
+        # Nếu không phát hiện nháy mắt, cho điểm thấp nhất
+        blink_score = 0.0
 
-    # Luôn cho điểm cao nếu phát hiện ít nhất 1 nháy mắt
-    if blink_counter >= 1:
+    # Luôn cho điểm cao nếu phát hiện ít nhất 3 nháy mắt
+    if blink_counter >= 3:
         blink_score = 1.0
 
     # Tính điểm số EAR

@@ -23,7 +23,7 @@ class Config:
     CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:19006', 'http://192.168.1.7:19006', '*']  # Add your frontend URLs
 
     # KYC configuration
-    MIN_BLINK_COUNT = int(os.environ.get('MIN_BLINK_COUNT', 1))  # Chỉ yêu cầu 1 nháy mắt
+    MIN_BLINK_COUNT = int(os.environ.get('MIN_BLINK_COUNT', 3))  # Chỉ yêu cầu 3 nháy mắt
     MIN_LIVENESS_SCORE = float(os.environ.get('MIN_LIVENESS_SCORE', 0.3))  # Giảm ngưỡng điểm số xuống cực thấp để dễ vượt qua
     MAX_VIDEO_FILE_SIZE = int(os.environ.get('MAX_VIDEO_FILE_SIZE', 16 * 1024 * 1024)) # 16MB max video file size
 

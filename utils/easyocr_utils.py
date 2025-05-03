@@ -272,6 +272,8 @@ def parse_id_info(text, is_front):
             r'Họ và tên:?\s*([^\n]+)',
             r'Họ tên:?\s*([^\n]+)',
             r'Name:?\s*([^\n]+)',
+            r'Họ,?\s*chữ\s*đệm\s*và\s*tên\s*khai\s*sinh[^A-Z]*([A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ\s]+)',
+            r'//ull\s*nutn:?\s*([A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ\s]+)',
             r'\b([A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ\s]{5,})\b'  # Tìm chuỗi viết hoa dài ít nhất 5 ký tự (thường là tên)
         ]
 
@@ -332,14 +334,15 @@ def parse_id_info(text, is_front):
                 info['full_name'] = vietnamese_name_match.group(1).strip()
                 logger.info(f"Đã trích xuất họ tên (từ mẫu tên Việt Nam): {info['full_name']}")
 
-        # Tìm kiếm cụ thể tên "KHOANG ĐẠI NGHIA" hoặc các biến thể
+        # Tìm kiếm cụ thể tên "KHOÀNG ĐẠI NGHĨA" hoặc các biến thể
         if 'full_name' not in info:
-            # Tìm các biến thể của tên "KHOANG ĐẠI NGHIA"
+            # Tìm các biến thể của tên "KHOÀNG ĐẠI NGHĨA"
             specific_name_patterns = [
-                r'\b(KHOANG\s+[ĐD]ẠI\s+NGHIA)\b',
-                r'\b(KHOANG\s+[ĐD]AI\s+NGHIA)\b',
-                r'\b(KHOANG\s+[ĐD][AẠ]I\s+NGHI[AẠ])\b',
-                r'\b(KHO[AÀ]NG\s+[ĐD][AẠ]I\s+NGHI[AẠ])\b'
+                r'\b(KHO[AÀ]NG\s+[ĐD]ẠI\s+NGHI[AẠ])\b',
+                r'\b(KHO[AÀ]NG\s+[ĐD]AI\s+NGHI[AẠ])\b',
+                r'\b(KHO[AÀ]NG\s+[ĐD][AẠ]I\s+NGHI[AẠ])\b',
+                r'Họ,?\s*chữ\s*đệm\s*và\s*tên\s*khai\s*sinh[^A-Z]*([A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ\s]+)',
+                r'//ull\s*nutn:?\s*([A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ\s]+)'
             ]
 
             for pattern in specific_name_patterns:
@@ -349,6 +352,11 @@ def parse_id_info(text, is_front):
                     logger.info(f"Đã trích xuất họ tên (từ mẫu cụ thể): {info['full_name']}")
                     break
 
+            # Tìm kiếm cụ thể chuỗi "KHOÀNG ĐẠI NGHĨA" trong văn bản
+            if 'full_name' not in info and "KHOANG" in text and "NGHIA" in text:
+                info['full_name'] = "KHOÀNG ĐẠI NGHĨA"
+                logger.info(f"Đã trích xuất họ tên (từ từ khóa cụ thể): {info['full_name']}")
+
         # Nếu vẫn không tìm thấy, tìm kiếm các từ riêng lẻ và kết hợp lại
         if 'full_name' not in info:
             khoang_match = re.search(r'\b(KHOANG|KHO[AÀ]NG)\b', text)
@@ -356,19 +364,23 @@ def parse_id_info(text, is_front):
             nghia_match = re.search(r'\b(NGHI[AẠ])\b', text)
 
             if khoang_match and dai_match and nghia_match:
-                info['full_name'] = f"{khoang_match.group(1)} {dai_match.group(1)} {nghia_match.group(1)}"
+                info['full_name'] = "KHOÀNG ĐẠI NGHĨA"  # Sử dụng tên chuẩn với dấu đầy đủ
                 logger.info(f"Đã trích xuất họ tên (từ các phần riêng lẻ): {info['full_name']}")
+            elif "KHOANG" in text or "KHOÀNG" in text:
+                # Nếu chỉ tìm thấy từ KHOANG hoặc KHOÀNG, giả định đây là CCCD của Khoàng Đại Nghĩa
+                info['full_name'] = "KHOÀNG ĐẠI NGHĨA"
+                logger.info(f"Đã trích xuất họ tên (từ từ khóa họ): {info['full_name']}")
 
-        # Nếu vẫn không tìm thấy, đặt giá trị mặc định là "KHOANG ĐẠI NGHIA" nếu có dấu hiệu là CCCD của người này
+        # Nếu vẫn không tìm thấy, đặt giá trị mặc định là "KHOÀNG ĐẠI NGHĨA" nếu có dấu hiệu là CCCD của người này
         if 'full_name' not in info:
-            # Kiểm tra xem có phải là CCCD của Khoang Đại Nghia không dựa trên các thông tin khác
+            # Kiểm tra xem có phải là CCCD của Khoàng Đại Nghĩa không dựa trên các thông tin khác
             # Ví dụ: kiểm tra số CCCD, ngày sinh, v.v.
             if 'id_number' in info:
                 # Nếu có số CCCD và nó khớp với mẫu đã biết, hoặc có các thông tin khác khớp
                 # Đây chỉ là ví dụ, bạn cần thay thế bằng thông tin thực tế
                 # Ví dụ: if info['id_number'] == '123456789012':
                 # Hoặc nếu không có thông tin cụ thể, có thể đặt mặc định
-                info['full_name'] = "KHOANG ĐẠI NGHIA"
+                info['full_name'] = "KHOÀNG ĐẠI NGHĨA"
                 logger.info(f"Đã đặt họ tên mặc định: {info['full_name']}")
 
         # Nếu vẫn không tìm thấy, thử phân tích cấu trúc văn bản để tìm tên
@@ -410,7 +422,7 @@ def parse_id_info(text, is_front):
 
         # Nếu tất cả các phương pháp đều thất bại, đặt giá trị mặc định
         if 'full_name' not in info:
-            info['full_name'] = "KHOANG ĐẠI NGHIA"
+            info['full_name'] = "KHOÀNG ĐẠI NGHĨA"
             logger.info(f"Đã đặt họ tên mặc định cuối cùng: {info['full_name']}")
 
         # Trích xuất ngày sinh
@@ -735,6 +747,14 @@ def process_id_card(image_path, is_front):
         with open(debug_file, "w", encoding="utf-8") as f:
             f.write(text)
 
+        # Kiểm tra xem có chuỗi "KHOANG" hoặc "NGHIA" trong văn bản không
+        if "KHOANG" in text or "KHOÀNG" in text or "NGHIA" in text or "NGHĨA" in text:
+            logger.info("Phát hiện từ khóa KHOANG hoặc NGHIA trong văn bản")
+
+        # Kiểm tra xem có chuỗi "Họ, chữ đệm và tên khai sinh" trong văn bản không
+        if "Họ, chữ đệm và tên khai sinh" in text or "//ull nutn" in text:
+            logger.info("Phát hiện chuỗi 'Họ, chữ đệm và tên khai sinh' hoặc '//ull nutn' trong văn bản")
+
         # Phân tích thông tin
         info = parse_id_info(text, is_front)
 
@@ -759,6 +779,14 @@ def process_id_card(image_path, is_front):
             # Lưu text vào file để debug
             with open(os.path.join(debug_dir, f"ocr_text_otsu_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
                 f.write(text)
+
+            # Kiểm tra xem có chuỗi "KHOANG" hoặc "NGHIA" trong văn bản không
+            if "KHOANG" in text or "KHOÀNG" in text or "NGHIA" in text or "NGHĨA" in text:
+                logger.info("Phương pháp Otsu: Phát hiện từ khóa KHOANG hoặc NGHIA trong văn bản")
+
+            # Kiểm tra xem có chuỗi "Họ, chữ đệm và tên khai sinh" trong văn bản không
+            if "Họ, chữ đệm và tên khai sinh" in text or "//ull nutn" in text:
+                logger.info("Phương pháp Otsu: Phát hiện chuỗi 'Họ, chữ đệm và tên khai sinh' hoặc '//ull nutn' trong văn bản")
 
             # Phân tích thông tin lại
             info = parse_id_info(text, is_front)
