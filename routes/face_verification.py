@@ -14,7 +14,7 @@ face_verification_bp = Blueprint('face_verification', __name__)
 @kyc_rate_limit()
 def verify_face(current_user):
     """
-    Endpoint para verificar si el rostro en la selfie coincide con el rostro en la CCCD
+    Endpoint để xác minh xem khuôn mặt trong ảnh selfie có khớp với khuôn mặt trong CCCD không
     """
     if 'image' not in request.files:
         return jsonify({'error': 'Không tìm thấy file ảnh'}), 400
@@ -23,41 +23,46 @@ def verify_face(current_user):
     if not selfie_file.filename:
         return jsonify({'error': 'Không có file nào được chọn'}), 400
 
-    # Validar el archivo
+    # Kiểm tra định dạng file
     if not is_valid_file_extension(selfie_file.filename, current_app.config['ALLOWED_IMAGE_EXTENSIONS']):
-        return jsonify({'error': 'Định dạng file không được hỗ trợ'}), 400
+        return jsonify({'error': 'Định dạng file không được hỗ trợ. Vui lòng sử dụng định dạng JPG, JPEG hoặc PNG'}), 400
 
     if not is_valid_file_size(selfie_file, current_app.config['MAX_CONTENT_LENGTH']):
-        return jsonify({'error': 'Kích thước file quá lớn'}), 400
+        max_size_mb = current_app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+        return jsonify({'error': f'Kích thước file quá lớn. Kích thước tối đa cho phép là {max_size_mb}MB'}), 400
 
     try:
-        # Obtener el registro de verificación KYC
+        # Lấy bản ghi xác minh KYC
         verification = KYCVerification.query.filter_by(user_id=current_user.id).first()
         if not verification:
             return jsonify({'error': 'Vui lòng tải lên CCCD trước khi xác minh khuôn mặt'}), 400
 
-        # Verificar que se haya cargado la imagen frontal de la CCCD
+        # Kiểm tra xem đã tải lên mặt trước CCCD chưa
         if not verification.identity_card_front:
             return jsonify({'error': 'Vui lòng tải lên mặt trước CCCD trước khi xác minh khuôn mặt'}), 400
 
-        # Guardar la imagen de selfie
+        # Lưu ảnh selfie
         filename = f'selfie_{current_user.id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg'
         filename = sanitize_file_name(filename)
         selfie_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
 
-        # Asegurar que el directorio de carga existe
+        # Đảm bảo thư mục tải lên tồn tại
         os.makedirs(os.path.dirname(selfie_path), exist_ok=True)
 
         selfie_file.save(selfie_path)
+        current_app.logger.info(f"Đã lưu ảnh selfie tại: {selfie_path}")
 
-        # Obtener la ruta de la imagen frontal de la CCCD
+        # Lấy đường dẫn đến ảnh mặt trước CCCD
         id_card_path = os.path.join(current_app.root_path, verification.identity_card_front)
+        current_app.logger.info(f"Đường dẫn ảnh CCCD: {id_card_path}")
 
-        # Verificar la coincidencia de rostros
-        tolerance = current_app.config.get('FACE_MATCH_TOLERANCE', 0.6)
+        # Xác minh sự khớp của khuôn mặt
+        tolerance = current_app.config.get('FACE_MATCH_TOLERANCE', 0.45)
+        current_app.logger.info(f"Sử dụng ngưỡng dung sai: {tolerance}")
+
         result = verify_face_match(id_card_path, selfie_path, tolerance)
 
-        # Actualizar el registro de verificación
+        # Cập nhật bản ghi xác minh
         verification.selfie_path = selfie_path
         verification.face_match = result['match']
         verification.face_distance = result['distance']
@@ -65,11 +70,14 @@ def verify_face(current_user):
 
         if not result['match']:
             verification.status = 'failed'
-            verification.rejection_reason = 'Xác minh không thành công: khuôn mặt không khớp'
+            verification.rejection_reason = 'Xác minh không thành công: khuôn mặt không khớp với CCCD'
+            current_app.logger.warning(f"Xác minh khuôn mặt thất bại cho user_id={current_user.id}, khoảng cách={result['distance']}, ngưỡng={tolerance}")
+        else:
+            current_app.logger.info(f"Xác minh khuôn mặt thành công cho user_id={current_user.id}, khoảng cách={result['distance']}, ngưỡng={tolerance}")
 
         db.session.commit()
 
-        # Preparar la respuesta - đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
+        # Chuẩn bị phản hồi - đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
         response = {
             'success': bool(result['success']),
             'match': bool(result['match']),
@@ -77,19 +85,27 @@ def verify_face(current_user):
             'selfie_path': os.path.basename(selfie_path)
         }
 
-        # Código de estado basado en el resultado
+        # Thêm thông tin debug nếu có
+        if 'debug_info' in result:
+            response['debug_info'] = result['debug_info']
+
+        # Mã trạng thái dựa trên kết quả
         status_code = 200 if bool(result['match']) else 400
+
+        # Thêm thông báo rõ ràng cho người dùng
+        if not result['match']:
+            response['error'] = 'Xác minh không thành công: khuôn mặt trong ảnh selfie không khớp với khuôn mặt trong CCCD. Vui lòng thử lại với ảnh rõ nét hơn hoặc đảm bảo bạn đang sử dụng CCCD của chính mình.'
 
         return jsonify(response), status_code
 
     except Exception as e:
-        current_app.logger.error(f"Face verification error: {str(e)}")
+        current_app.logger.error(f"Lỗi xác minh khuôn mặt: {str(e)}")
 
-        # Si ocurrió un error, eliminar la imagen de selfie si existe
+        # Nếu xảy ra lỗi, xóa ảnh selfie nếu tồn tại
         if 'selfie_path' in locals() and os.path.exists(selfie_path):
             os.remove(selfie_path)
 
-        return jsonify({'error': 'Có lỗi xảy ra khi xác minh khuôn mặt. Vui lòng thử lại.'}), 500
+        return jsonify({'error': 'Có lỗi xảy ra khi xác minh khuôn mặt. Vui lòng thử lại với ảnh rõ nét hơn và đảm bảo ánh sáng tốt.'}), 500
 
 @face_verification_bp.route('/status', methods=['GET'])
 @token_required

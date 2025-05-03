@@ -28,7 +28,7 @@ class Config:
     MAX_VIDEO_FILE_SIZE = int(os.environ.get('MAX_VIDEO_FILE_SIZE', 16 * 1024 * 1024)) # 16MB max video file size
 
     # Face verification configuration
-    FACE_MATCH_TOLERANCE = float(os.environ.get('FACE_MATCH_TOLERANCE', 0.6))  # Ngưỡng so khớp khuôn mặt (thấp hơn = nghiêm ngặt hơn)
+    FACE_MATCH_TOLERANCE = float(os.environ.get('FACE_MATCH_TOLERANCE', 0.45))  # Ngưỡng so khớp khuôn mặt (thấp hơn = nghiêm ngặt hơn)
 
     @staticmethod
     def init_app(app):

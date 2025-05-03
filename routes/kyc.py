@@ -282,8 +282,9 @@ def get_kyc_status(current_user):
 
     # Đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
     liveness_verified = False
-    if verification.liveness_score is not None:
-        liveness_verified = bool(verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'])
+    if verification.liveness_score is not None and verification.blink_count is not None:
+        liveness_verified = bool(verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'] and
+                                verification.blink_count >= current_app.config['MIN_BLINK_COUNT'])
 
     return jsonify({
         'status': verification.status,

@@ -229,9 +229,15 @@ def get_kyc_status(current_user):
 
     id_card_verified = bool(verification.identity_card_front and verification.identity_card_back)
 
+    # Kiểm tra cả điểm số liveness và số lần nháy mắt
+    liveness_verified = False
+    if verification.liveness_score is not None and verification.blink_count is not None:
+        liveness_verified = bool(verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'] and
+                                verification.blink_count >= current_app.config['MIN_BLINK_COUNT'])
+
     return jsonify({
         'status': verification.status,
-        'liveness_verified': verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'] if verification.liveness_score else False,
+        'liveness_verified': liveness_verified,
         'id_card_verified': id_card_verified,
         'verified_at': verification.verified_at.isoformat() if verification.verified_at else None,
         'liveness_score': verification.liveness_score,
