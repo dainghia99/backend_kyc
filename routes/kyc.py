@@ -5,7 +5,7 @@ from utils.liveness import process_video_for_liveness
 # Thay thế Tesseract OCR bằng EasyOCR
 from utils.easyocr_utils import process_id_card
 from middleware.rate_limit import kyc_rate_limit
-from middleware.security import validate_file_extension, validate_file_size, sanitize_file_name
+from middleware.security import is_valid_file_extension, is_valid_file_size, sanitize_file_name
 from datetime import datetime
 import os
 
@@ -84,11 +84,12 @@ def verify_liveness(current_user):
         db.session.add(verification)
         db.session.commit()
 
+        # Đảm bảo tất cả các giá trị số và boolean được chuyển đổi sang kiểu Python gốc
         return jsonify({
             'message': message,
-            'liveness_score': results['liveness_score'],
-            'blink_count': results['blink_count'],
-            'attempt_count': verification.attempt_count,
+            'liveness_score': float(results['liveness_score']),
+            'blink_count': int(results['blink_count']),
+            'attempt_count': int(verification.attempt_count),
             'status': verification.status
         }), 200
 
@@ -216,6 +217,11 @@ def verify_id_card(current_user):
         db.session.add(verification)
         db.session.commit()
 
+        # Đảm bảo tất cả các giá trị boolean trong id_info được chuyển đổi sang kiểu boolean Python gốc
+        for key, value in id_info.items():
+            if isinstance(value, bool):
+                id_info[key] = bool(value)
+
         return jsonify({
             'message': 'Tải lên thành công',
             'id_info': id_info
@@ -285,14 +291,19 @@ def get_kyc_status(current_user):
 
     id_card_verified = bool(verification.identity_card_front and verification.identity_card_back)
 
+    # Đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
+    liveness_verified = False
+    if verification.liveness_score is not None:
+        liveness_verified = bool(verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'])
+
     return jsonify({
         'status': verification.status,
-        'liveness_verified': verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'] if verification.liveness_score else False,
-        'id_card_verified': id_card_verified,
+        'liveness_verified': liveness_verified,
+        'id_card_verified': bool(id_card_verified),
         'verified_at': verification.verified_at.isoformat() if verification.verified_at else None,
-        'liveness_score': verification.liveness_score,
-        'blink_count': verification.blink_count,
-        'attempt_count': verification.attempt_count,
+        'liveness_score': float(verification.liveness_score) if verification.liveness_score is not None else None,
+        'blink_count': int(verification.blink_count) if verification.blink_count is not None else 0,
+        'attempt_count': int(verification.attempt_count),
         'last_attempt': verification.last_attempt_at.isoformat() if verification.last_attempt_at else None,
         'rejection_reason': verification.rejection_reason
     }), 200

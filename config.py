@@ -27,6 +27,9 @@ class Config:
     MIN_LIVENESS_SCORE = float(os.environ.get('MIN_LIVENESS_SCORE', 0.3))  # Giảm ngưỡng điểm số xuống cực thấp để dễ vượt qua
     MAX_VIDEO_FILE_SIZE = int(os.environ.get('MAX_VIDEO_FILE_SIZE', 16 * 1024 * 1024)) # 16MB max video file size
 
+    # Face verification configuration
+    FACE_MATCH_TOLERANCE = float(os.environ.get('FACE_MATCH_TOLERANCE', 0.6))  # Ngưỡng so khớp khuôn mặt (thấp hơn = nghiêm ngặt hơn)
+
     @staticmethod
     def init_app(app):
         # Ensure upload directory exists

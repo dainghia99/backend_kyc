@@ -83,6 +83,11 @@ def process_image_direct(current_user):
             db.session.add(verification)
             db.session.commit()
 
+        # Đảm bảo tất cả các giá trị boolean trong id_info được chuyển đổi sang kiểu boolean Python gốc
+        for key, value in id_info.items():
+            if isinstance(value, bool):
+                id_info[key] = bool(value)
+
         return jsonify({
             'message': 'Xử lý ảnh thành công',
             'id_info': id_info
@@ -176,6 +181,11 @@ def upload_and_process(current_user):
 
         db.session.add(verification)
         db.session.commit()
+
+        # Đảm bảo tất cả các giá trị boolean trong id_info được chuyển đổi sang kiểu boolean Python gốc
+        for key, value in id_info.items():
+            if isinstance(value, bool):
+                id_info[key] = bool(value)
 
         # Trả về kết quả
         return jsonify({

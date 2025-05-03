@@ -8,7 +8,7 @@ def update_database():
     with app.app_context():
         # Kết nối trực tiếp đến cơ sở dữ liệu
         connection = db.engine.connect()
-        
+
         # Kiểm tra xem cột blink_count đã tồn tại chưa
         try:
             connection.execute(text("SELECT blink_count FROM kyc_verification LIMIT 1"))
@@ -20,7 +20,7 @@ def update_database():
                 print("Đã thêm cột blink_count.")
             except Exception as e:
                 print(f"Lỗi khi thêm cột blink_count: {e}")
-        
+
         # Kiểm tra xem cột attempt_count đã tồn tại chưa
         try:
             connection.execute(text("SELECT attempt_count FROM kyc_verification LIMIT 1"))
@@ -32,7 +32,7 @@ def update_database():
                 print("Đã thêm cột attempt_count.")
             except Exception as e:
                 print(f"Lỗi khi thêm cột attempt_count: {e}")
-        
+
         # Kiểm tra xem cột last_attempt_at đã tồn tại chưa
         try:
             connection.execute(text("SELECT last_attempt_at FROM kyc_verification LIMIT 1"))
@@ -44,7 +44,7 @@ def update_database():
                 print("Đã thêm cột last_attempt_at.")
             except Exception as e:
                 print(f"Lỗi khi thêm cột last_attempt_at: {e}")
-        
+
         # Kiểm tra xem cột rejection_reason đã tồn tại chưa
         try:
             connection.execute(text("SELECT rejection_reason FROM kyc_verification LIMIT 1"))
@@ -56,7 +56,43 @@ def update_database():
                 print("Đã thêm cột rejection_reason.")
             except Exception as e:
                 print(f"Lỗi khi thêm cột rejection_reason: {e}")
-        
+
+        # Kiểm tra xem cột face_match đã tồn tại chưa
+        try:
+            connection.execute(text("SELECT face_match FROM kyc_verification LIMIT 1"))
+            print("Cột face_match đã tồn tại.")
+        except Exception:
+            # Thêm cột face_match nếu chưa tồn tại
+            try:
+                connection.execute(text("ALTER TABLE kyc_verification ADD COLUMN face_match BOOLEAN NULL"))
+                print("Đã thêm cột face_match.")
+            except Exception as e:
+                print(f"Lỗi khi thêm cột face_match: {e}")
+
+        # Kiểm tra xem cột face_distance đã tồn tại chưa
+        try:
+            connection.execute(text("SELECT face_distance FROM kyc_verification LIMIT 1"))
+            print("Cột face_distance đã tồn tại.")
+        except Exception:
+            # Thêm cột face_distance nếu chưa tồn tại
+            try:
+                connection.execute(text("ALTER TABLE kyc_verification ADD COLUMN face_distance FLOAT NULL"))
+                print("Đã thêm cột face_distance.")
+            except Exception as e:
+                print(f"Lỗi khi thêm cột face_distance: {e}")
+
+        # Kiểm tra xem cột face_verified_at đã tồn tại chưa
+        try:
+            connection.execute(text("SELECT face_verified_at FROM kyc_verification LIMIT 1"))
+            print("Cột face_verified_at đã tồn tại.")
+        except Exception:
+            # Thêm cột face_verified_at nếu chưa tồn tại
+            try:
+                connection.execute(text("ALTER TABLE kyc_verification ADD COLUMN face_verified_at DATETIME NULL"))
+                print("Đã thêm cột face_verified_at.")
+            except Exception as e:
+                print(f"Lỗi khi thêm cột face_verified_at: {e}")
+
         connection.close()
         print("Cập nhật cơ sở dữ liệu hoàn tất.")
 

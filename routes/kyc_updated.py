@@ -5,7 +5,7 @@ from utils.liveness import process_video_for_liveness
 # Thay thế Tesseract OCR bằng EasyOCR
 from utils.easyocr_utils import process_id_card
 from middleware.rate_limit import kyc_rate_limit
-from middleware.security import validate_file_extension, validate_file_size, sanitize_file_name
+from middleware.security import is_valid_file_extension, is_valid_file_size, sanitize_file_name
 from datetime import datetime
 import os
 

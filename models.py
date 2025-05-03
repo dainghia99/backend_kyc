@@ -36,6 +36,10 @@ class KYCVerification(db.Model):
     attempt_count = db.Column(db.Integer, default=0)
     last_attempt_at = db.Column(db.DateTime, nullable=True)
     rejection_reason = db.Column(db.String(200), nullable=True)
+    # Campos para verificación facial
+    face_match = db.Column(db.Boolean, nullable=True)
+    face_distance = db.Column(db.Float, nullable=True)
+    face_verified_at = db.Column(db.DateTime, nullable=True)
 
     def increment_attempt(self):
         if self.attempt_count is None:

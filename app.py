@@ -5,6 +5,7 @@ from config import config
 from routes.auth import auth_bp
 from routes.kyc import kyc_bp
 from routes.ocr_direct import ocr_bp
+from routes.face_verification import face_verification_bp
 from middleware.error_handler import register_error_handlers
 import logging
 from logging.handlers import RotatingFileHandler
@@ -97,6 +98,7 @@ def create_app(config_name='development'):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(kyc_bp, url_prefix='/kyc')
     app.register_blueprint(ocr_bp, url_prefix='/ocr')
+    app.register_blueprint(face_verification_bp, url_prefix='/face-verification')
 
     @app.route('/')
     def index():
