@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from models import db, KYCVerification, User
 from utils.auth import token_required
-from utils.face_verification import verify_face_match
+from utils.face_verification_pure_yolo import verify_face_match
 from middleware.rate_limit import kyc_rate_limit
 from middleware.security import is_valid_file_extension, is_valid_file_size, sanitize_file_name
 from datetime import datetime
@@ -60,6 +60,8 @@ def verify_face(current_user):
         tolerance = current_app.config.get('FACE_MATCH_TOLERANCE', 0.45)
         current_app.logger.info(f"Sử dụng ngưỡng dung sai: {tolerance}")
 
+        # Sử dụng YOLO để xác minh khuôn mặt
+        current_app.logger.info("Sử dụng YOLO để xác minh khuôn mặt")
         result = verify_face_match(id_card_path, selfie_path, tolerance)
 
         # Cập nhật bản ghi xác minh
