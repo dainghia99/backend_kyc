@@ -36,91 +36,7 @@ def get_reader(languages=['vi', 'en']):
             raise Exception(f"Không thể khởi tạo EasyOCR reader: {e}")
     return _reader
 
-def detect_id_card_orientation(img):
-    """
-    Phát hiện hướng của ảnh CCCD sử dụng tỷ lệ khung hình và phân tích đặc điểm
-
-    Args:
-        img: Ảnh đầu vào (đọc bằng cv2.imread)
-
-    Returns:
-        angle: Góc cần xoay (0, 90, 180, hoặc 270)
-    """
-    # Lấy kích thước ảnh
-    height, width = img.shape[:2]
-
-    # Kiểm tra tỷ lệ khung hình
-    aspect_ratio = width / height
-
-    logger.info(f"Kích thước ảnh: {width}x{height}, tỷ lệ khung hình: {aspect_ratio:.2f}")
-
-    # CCCD thường có tỷ lệ khung hình khoảng 1.6 (ngang)
-    # Nếu tỷ lệ < 1, ảnh đang ở định dạng dọc (portrait)
-    if aspect_ratio < 1:
-        logger.info(f"Ảnh đã ở định dạng dọc (portrait) với tỷ lệ khung hình: {aspect_ratio:.2f}")
-        # Không cần xoay ảnh nếu đã ở định dạng dọc
-        return 0
-
-    # Nếu tỷ lệ > 1 nhưng < 1.3, có thể ảnh vẫn bị xoay
-    if aspect_ratio > 1 and aspect_ratio < 1.3:
-        logger.info(f"Tỷ lệ khung hình không phù hợp với CCCD thông thường: {aspect_ratio:.2f}")
-
-        # Thử phát hiện xem có cần xoay 180 độ không
-        # Chuyển sang ảnh xám
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Chia ảnh thành nửa trên và nửa dưới
-        top_half = gray[:height//2, :]
-        bottom_half = gray[height//2:, :]
-
-        # Tính độ sáng trung bình của mỗi nửa
-        top_brightness = np.mean(top_half)
-        bottom_brightness = np.mean(bottom_half)
-
-        logger.info(f"Độ sáng nửa trên: {top_brightness:.2f}, nửa dưới: {bottom_brightness:.2f}")
-
-        # Nếu nửa dưới sáng hơn nửa trên đáng kể, có thể ảnh bị lộn ngược
-        if bottom_brightness > top_brightness * 1.2:
-            logger.info("Phát hiện ảnh có thể bị lộn ngược (180 độ)")
-            return 180
-
-    # Mặc định không cần xoay
-    return 0
-
-def rotate_image(img, angle):
-    """
-    Xoay ảnh theo góc chỉ định
-
-    Args:
-        img: Ảnh đầu vào
-        angle: Góc xoay (0, 90, 180, hoặc 270)
-
-    Returns:
-        Ảnh đã xoay
-    """
-    if angle == 0:
-        return img
-
-    height, width = img.shape[:2]
-
-    if angle == 90:
-        # Xoay 90 độ ngược chiều kim đồng hồ
-        rotated = cv2.transpose(img)
-        rotated = cv2.flip(rotated, 0)
-        logger.info(f"Đã xoay ảnh 90 độ")
-    elif angle == 180:
-        # Xoay 180 độ
-        rotated = cv2.flip(img, -1)
-        logger.info(f"Đã xoay ảnh 180 độ")
-    elif angle == 270:
-        # Xoay 90 độ theo chiều kim đồng hồ (hoặc 270 độ ngược chiều)
-        rotated = cv2.transpose(img)
-        rotated = cv2.flip(rotated, 1)
-        logger.info(f"Đã xoay ảnh 270 độ")
-    else:
-        rotated = img
-
-    return rotated
+# Các hàm xoay ảnh đã được loại bỏ theo yêu cầu
 
 def preprocess_image(image_path):
     """
@@ -146,22 +62,7 @@ def preprocess_image(image_path):
         # Lấy kích thước ảnh
         height, width = img.shape[:2]
         aspect_ratio = width / height
-
-        # Kiểm tra xem ảnh có ở định dạng dọc không (portrait)
-        if aspect_ratio < 1:
-            logger.info(f"Ảnh đã ở định dạng dọc (portrait) với tỷ lệ khung hình: {aspect_ratio:.2f}")
-            # Không cần xoay ảnh nếu đã ở định dạng dọc
-            orientation_angle = 0
-        else:
-            # Phát hiện hướng của ảnh CCCD nếu không ở định dạng dọc
-            orientation_angle = detect_id_card_orientation(img)
-
-        # Xoay ảnh về đúng hướng nếu cần
-        if orientation_angle != 0:
-            img = rotate_image(img, orientation_angle)
-            # Lưu ảnh đã xoay để debug
-            cv2.imwrite(os.path.join(debug_dir, f"rotated_{os.path.basename(image_path)}"), img)
-            logger.info(f"Đã xoay ảnh {orientation_angle} độ")
+        logger.info(f"Kích thước ảnh: {width}x{height}, tỷ lệ khung hình: {aspect_ratio:.2f}")
 
         # Chuyển sang ảnh xám
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -818,124 +719,28 @@ def process_id_card(image_path, is_front):
                 # Phân tích thông tin lại
                 info = parse_id_info(text, is_front)
 
-                # Nếu vẫn không tìm thấy, thử phương pháp 4: Xoay ảnh 180 độ và thử lại
+                # Thử trực tiếp với ảnh gốc nếu các phương pháp trước không thành công
                 missing_fields = [field for field in required_fields if field not in info]
                 if (is_front and ("id_number" not in info or "full_name" not in info)) or (not is_front and len(missing_fields) > 0):
-                    logger.warning("Vẫn không tìm thấy thông tin cơ bản, thử xoay ảnh 180 độ và thử lại...")
+                    logger.warning("Vẫn không tìm thấy thông tin cơ bản, thử lại với ảnh gốc...")
 
-                    # Xoay ảnh 180 độ
-                    rotated_img = rotate_image(original_img, 180)
-
-                    # Lưu ảnh đã xoay để debug
-                    cv2.imwrite(os.path.join(debug_dir, f"rotated_180_{os.path.basename(image_path)}"), rotated_img)
-
-                    # Tiền xử lý ảnh đã xoay
-                    gray = cv2.cvtColor(rotated_img, cv2.COLOR_BGR2GRAY)
-                    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-                    _, rotated_thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-                    # Thử OCR với ảnh đã xoay
-                    text = extract_text(rotated_thresh)
+                    # Thử OCR với ảnh gốc
+                    reader = get_reader()
+                    results = reader.readtext(image_path, detail=0)
+                    text = "\n".join(results)
 
                     # Lưu text vào file để debug
-                    with open(os.path.join(debug_dir, f"ocr_text_rotated_180_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
+                    with open(os.path.join(debug_dir, f"ocr_text_original_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
                         f.write(text)
 
                     # Phân tích thông tin lại
-                    rotated_info = parse_id_info(text, is_front)
+                    original_info = parse_id_info(text, is_front)
 
-                    # Kiểm tra xem ảnh xoay có cho kết quả tốt hơn không
-                    rotated_missing_fields = [field for field in required_fields if field not in rotated_info]
-                    if len(rotated_missing_fields) < len(missing_fields):
-                        logger.info("Ảnh xoay 180 độ cho kết quả tốt hơn, sử dụng kết quả này")
-                        info = rotated_info
-
-                    # Nếu vẫn không tìm thấy, thử phương pháp 5: Xoay ảnh 90 độ và thử lại
-                    missing_fields = [field for field in required_fields if field not in info]
-                    if (is_front and ("id_number" not in info or "full_name" not in info)) or (not is_front and len(missing_fields) > 0):
-                        logger.warning("Vẫn không tìm thấy thông tin cơ bản, thử xoay ảnh 90 độ và thử lại...")
-
-                        # Xoay ảnh 90 độ
-                        rotated_img = rotate_image(original_img, 90)
-
-                        # Lưu ảnh đã xoay để debug
-                        cv2.imwrite(os.path.join(debug_dir, f"rotated_90_{os.path.basename(image_path)}"), rotated_img)
-
-                        # Tiền xử lý ảnh đã xoay
-                        gray = cv2.cvtColor(rotated_img, cv2.COLOR_BGR2GRAY)
-                        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-                        _, rotated_thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-                        # Thử OCR với ảnh đã xoay
-                        text = extract_text(rotated_thresh)
-
-                        # Lưu text vào file để debug
-                        with open(os.path.join(debug_dir, f"ocr_text_rotated_90_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
-                            f.write(text)
-
-                        # Phân tích thông tin lại
-                        rotated_info = parse_id_info(text, is_front)
-
-                        # Kiểm tra xem ảnh xoay có cho kết quả tốt hơn không
-                        rotated_missing_fields = [field for field in required_fields if field not in rotated_info]
-                        if len(rotated_missing_fields) < len(missing_fields):
-                            logger.info("Ảnh xoay 90 độ cho kết quả tốt hơn, sử dụng kết quả này")
-                            info = rotated_info
-
-                        # Nếu vẫn không tìm thấy, thử phương pháp 6: Xoay ảnh 270 độ và thử lại
-                        missing_fields = [field for field in required_fields if field not in info]
-                        if (is_front and ("id_number" not in info or "full_name" not in info)) or (not is_front and len(missing_fields) > 0):
-                            logger.warning("Vẫn không tìm thấy thông tin cơ bản, thử xoay ảnh 270 độ và thử lại...")
-
-                            # Xoay ảnh 270 độ
-                            rotated_img = rotate_image(original_img, 270)
-
-                            # Lưu ảnh đã xoay để debug
-                            cv2.imwrite(os.path.join(debug_dir, f"rotated_270_{os.path.basename(image_path)}"), rotated_img)
-
-                            # Tiền xử lý ảnh đã xoay
-                            gray = cv2.cvtColor(rotated_img, cv2.COLOR_BGR2GRAY)
-                            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-                            _, rotated_thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-                            # Thử OCR với ảnh đã xoay
-                            text = extract_text(rotated_thresh)
-
-                            # Lưu text vào file để debug
-                            with open(os.path.join(debug_dir, f"ocr_text_rotated_270_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
-                                f.write(text)
-
-                            # Phân tích thông tin lại
-                            rotated_info = parse_id_info(text, is_front)
-
-                            # Kiểm tra xem ảnh xoay có cho kết quả tốt hơn không
-                            rotated_missing_fields = [field for field in required_fields if field not in rotated_info]
-                            if len(rotated_missing_fields) < len(missing_fields):
-                                logger.info("Ảnh xoay 270 độ cho kết quả tốt hơn, sử dụng kết quả này")
-                                info = rotated_info
-
-                            # Nếu vẫn không tìm thấy, thử trực tiếp với ảnh gốc
-                            missing_fields = [field for field in required_fields if field not in info]
-                            if (is_front and ("id_number" not in info or "full_name" not in info)) or (not is_front and len(missing_fields) > 0):
-                                logger.warning("Vẫn không tìm thấy thông tin cơ bản, thử lại với ảnh gốc...")
-
-                                # Thử OCR với ảnh gốc
-                                reader = get_reader()
-                                results = reader.readtext(image_path, detail=0)
-                                text = "\n".join(results)
-
-                                # Lưu text vào file để debug
-                                with open(os.path.join(debug_dir, f"ocr_text_original_{os.path.basename(image_path)}.txt"), "w", encoding="utf-8") as f:
-                                    f.write(text)
-
-                                # Phân tích thông tin lại
-                                original_info = parse_id_info(text, is_front)
-
-                                # Kiểm tra xem ảnh gốc có cho kết quả tốt hơn không
-                                original_missing_fields = [field for field in required_fields if field not in original_info]
-                                if len(original_missing_fields) < len(missing_fields):
-                                    logger.info("Ảnh gốc cho kết quả tốt hơn, sử dụng kết quả này")
-                                    info = original_info
+                    # Kiểm tra xem ảnh gốc có cho kết quả tốt hơn không
+                    original_missing_fields = [field for field in required_fields if field not in original_info]
+                    if len(original_missing_fields) < len(missing_fields):
+                        logger.info("Ảnh gốc cho kết quả tốt hơn, sử dụng kết quả này")
+                        info = original_info
 
         # Ghi log kết quả cuối cùng
         logger.info(f"Kết quả trích xuất thông tin: {info}")
