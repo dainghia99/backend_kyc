@@ -23,8 +23,8 @@ def verify_liveness(current_user):
         return jsonify({'error': 'Không có file nào được chọn'}), 400
 
     # Validate file
-    if not video_file.filename.lower().endswith(('.mp4', '.mov')):
-        return jsonify({'error': 'Chỉ chấp nhận file MP4 hoặc MOV'}), 400
+    if not video_file.filename.lower().endswith(('.mp4', '.mov', '.webm')):
+        return jsonify({'error': 'Chỉ chấp nhận file MP4, MOV hoặc WebM'}), 400
 
     # Check file size (16MB limit)
     max_file_size = current_app.config['MAX_VIDEO_FILE_SIZE']

@@ -93,6 +93,18 @@ def update_database():
             except Exception as e:
                 print(f"Lỗi khi thêm cột face_verified_at: {e}")
 
+        # Kiểm tra xem cột role đã tồn tại trong bảng user chưa
+        try:
+            connection.execute(text("SELECT role FROM user LIMIT 1"))
+            print("Cột role đã tồn tại.")
+        except Exception:
+            # Thêm cột role nếu chưa tồn tại
+            try:
+                connection.execute(text("ALTER TABLE user ADD COLUMN role VARCHAR(20) DEFAULT 'user'"))
+                print("Đã thêm cột role.")
+            except Exception as e:
+                print(f"Lỗi khi thêm cột role: {e}")
+
         connection.close()
         print("Cập nhật cơ sở dữ liệu hoàn tất.")
 

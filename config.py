@@ -14,7 +14,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     MAX_VIDEO_FILE_SIZE = 16 * 1024 * 1024 # 16MB max video file size
     ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-    ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov'}
+    ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'webm'}
 
     # Session configuration
     SESSION_LIFETIME = timedelta(days=7)  # Token expires after 7 days

@@ -11,6 +11,7 @@ class User(db.Model):
     kyc_status = db.Column(db.String(20), default='pending')
     kyc_verified_at = db.Column(db.DateTime, nullable=True)
     identity_verified = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), default='user')  # Các giá trị: 'user', 'admin', 'superadmin'
     identity_info = db.relationship('IdentityInfo', backref='user', uselist=False)
     sessions = db.relationship('UserSession', backref='user', lazy=True)
 
