@@ -265,6 +265,56 @@ def verify_id_card(current_user):
 
         return jsonify({'error': error_message}), error_code
 
+@kyc_bp.route('/confirm-id-card-info', methods=['POST'])
+@token_required
+def confirm_id_card_info(current_user):
+    """
+    Xác nhận thông tin CCCD đã trích xuất
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'Không có dữ liệu được gửi lên'}), 400
+
+        # Kiểm tra các trường bắt buộc
+        required_fields = ['id_number', 'full_name', 'gender', 'nationality', 'issue_date', 'expiry_date']
+        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+
+        if missing_fields:
+            missing_fields_str = ', '.join(missing_fields)
+            return jsonify({'error': f'Thiếu thông tin bắt buộc: {missing_fields_str}'}), 400
+
+        # Lấy hoặc tạo mới bản ghi IdentityInfo
+        identity = IdentityInfo.query.filter_by(user_id=current_user.id).first()
+        if not identity:
+            identity = IdentityInfo(user_id=current_user.id)
+
+        # Cập nhật thông tin
+        for key, value in data.items():
+            if hasattr(identity, key):
+                setattr(identity, key, value)
+
+        # Cập nhật trạng thái xác minh CCCD
+        verification = KYCVerification.query.filter_by(user_id=current_user.id).first()
+        if verification:
+            verification.id_card_verified = True
+
+        # Lưu vào cơ sở dữ liệu
+        db.session.add(identity)
+        if verification:
+            db.session.add(verification)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Xác nhận thông tin CCCD thành công'
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Confirm ID card info error: {str(e)}")
+        return jsonify({'error': 'Có lỗi xảy ra khi xác nhận thông tin CCCD'}), 500
+
 @kyc_bp.route('/status', methods=['GET'])
 @token_required
 def get_kyc_status(current_user):
@@ -278,7 +328,10 @@ def get_kyc_status(current_user):
             'attempt_count': 0
         }), 200
 
-    id_card_verified = bool(verification.identity_card_front and verification.identity_card_back)
+    # Kiểm tra xem ID card đã được xác minh chưa
+    # Nếu id_card_verified đã được đặt, sử dụng giá trị đó
+    # Nếu không, kiểm tra xem cả hai mặt của CCCD đã được tải lên chưa
+    id_card_verified = verification.id_card_verified or bool(verification.identity_card_front and verification.identity_card_back)
 
     # Đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
     liveness_verified = False
@@ -286,10 +339,25 @@ def get_kyc_status(current_user):
         liveness_verified = bool(verification.liveness_score > current_app.config['MIN_LIVENESS_SCORE'] and
                                 verification.blink_count >= current_app.config['MIN_BLINK_COUNT'])
 
+    # Lấy thông tin danh tính nếu có
+    identity_info = None
+    identity = IdentityInfo.query.filter_by(user_id=current_user.id).first()
+    if identity:
+        identity_info = {
+            'id_number': identity.id_number,
+            'full_name': identity.full_name,
+            'date_of_birth': identity.date_of_birth.strftime('%d/%m/%Y') if identity.date_of_birth else None,
+            'gender': identity.gender,
+            'nationality': identity.nationality,
+            'issue_date': identity.issue_date.strftime('%d/%m/%Y') if identity.issue_date else None,
+            'expiry_date': identity.expiry_date.strftime('%d/%m/%Y') if identity.expiry_date else None
+        }
+
     return jsonify({
         'status': verification.status,
         'liveness_verified': liveness_verified,
         'id_card_verified': bool(id_card_verified),
+        'identity_info': identity_info,
         'verified_at': verification.verified_at.isoformat() if verification.verified_at else None,
         'liveness_score': float(verification.liveness_score) if verification.liveness_score is not None else None,
         'blink_count': int(verification.blink_count) if verification.blink_count is not None else 0,
