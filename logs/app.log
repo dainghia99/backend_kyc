@@ -1,96 +1,22 @@
-2025-05-05 22:13:05,922 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-05 22:13:47,617 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 20:52:49,012 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 20:53:22,441 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 20:58:44,687 ERROR: Unhandled error: (pymysql.err.OperationalError) (1054, "Unknown column 'kyc_verification.id_card_verified' in 'field list'")
-[SQL: SELECT kyc_verification.id AS kyc_verification_id, kyc_verification.user_id AS kyc_verification_user_id, kyc_verification.selfie_path AS kyc_verification_selfie_path, kyc_verification.liveness_score AS kyc_verification_liveness_score, kyc_verification.blink_count AS kyc_verification_blink_count, kyc_verification.created_at AS kyc_verification_created_at, kyc_verification.verified_at AS kyc_verification_verified_at, kyc_verification.status AS kyc_verification_status, kyc_verification.identity_card_front AS kyc_verification_identity_card_front, kyc_verification.identity_card_back AS kyc_verification_identity_card_back, kyc_verification.attempt_count AS kyc_verification_attempt_count, kyc_verification.last_attempt_at AS kyc_verification_last_attempt_at, kyc_verification.rejection_reason AS kyc_verification_rejection_reason, kyc_verification.id_card_verified AS kyc_verification_id_card_verified, kyc_verification.face_match AS kyc_verification_face_match, kyc_verification.face_distance AS kyc_verification_face_distance, kyc_verification.face_verified_at AS kyc_verification_face_verified_at 
-FROM kyc_verification 
-WHERE kyc_verification.user_id = %(user_id_1)s 
- LIMIT %(param_1)s]
-[parameters: {'user_id_1': 39, 'param_1': 1}]
-(Background on this error at: https://sqlalche.me/e/14/e3q8) [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:44]
-2025-05-12 20:58:45,400 ERROR: Traceback (most recent call last):
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 1900, in _execute_context
-    self.dialect.do_execute(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\default.py", line 736, in do_execute
-    cursor.execute(statement, parameters)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\cursors.py", line 148, in execute
-    result = self._query(query)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\cursors.py", line 310, in _query
-    conn.query(q)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 548, in query
-    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
-    result.read()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 1156, in read
-    first_packet = self.connection._read_packet()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 725, in _read_packet
-    packet.raise_for_error()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
-    raise errorclass(errno, errval)
-pymysql.err.OperationalError: (1054, "Unknown column 'kyc_verification.id_card_verified' in 'field list'")
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\flask\app.py", line 1513, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\flask\app.py", line 1499, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\utils\auth.py", line 47, in decorated
-    return f(current_user, *args, **kwargs)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py", line 321, in get_kyc_status
-    verification = KYCVerification.query.filter_by(user_id=current_user.id).first()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\orm\query.py", line 2824, in first
-    return self.limit(1)._iter().first()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\orm\query.py", line 2916, in _iter
-    result = self.session.execute(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\orm\session.py", line 1714, in execute
-    result = conn._execute_20(statement, params or {}, execution_options)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 1705, in _execute_20
-    return meth(self, args_10style, kwargs_10style, execution_options)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\sql\elements.py", line 334, in _execute_on_connection
-    return connection._execute_clauseelement(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 1572, in _execute_clauseelement
-    ret = self._execute_context(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 1943, in _execute_context
-    self._handle_dbapi_exception(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 2124, in _handle_dbapi_exception
-    util.raise_(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\util\compat.py", line 211, in raise_
-    raise exception
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\base.py", line 1900, in _execute_context
-    self.dialect.do_execute(
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\sqlalchemy\engine\default.py", line 736, in do_execute
-    cursor.execute(statement, parameters)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\cursors.py", line 148, in execute
-    result = self._query(query)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\cursors.py", line 310, in _query
-    conn.query(q)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 548, in query
-    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
-    result.read()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 1156, in read
-    first_packet = self.connection._read_packet()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\connections.py", line 725, in _read_packet
-    packet.raise_for_error()
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "D:\do_an_tot_nghiep\thuc_hanh\backend\venv\lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
-    raise errorclass(errno, errval)
-sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1054, "Unknown column 'kyc_verification.id_card_verified' in 'field list'")
-[SQL: SELECT kyc_verification.id AS kyc_verification_id, kyc_verification.user_id AS kyc_verification_user_id, kyc_verification.selfie_path AS kyc_verification_selfie_path, kyc_verification.liveness_score AS kyc_verification_liveness_score, kyc_verification.blink_count AS kyc_verification_blink_count, kyc_verification.created_at AS kyc_verification_created_at, kyc_verification.verified_at AS kyc_verification_verified_at, kyc_verification.status AS kyc_verification_status, kyc_verification.identity_card_front AS kyc_verification_identity_card_front, kyc_verification.identity_card_back AS kyc_verification_identity_card_back, kyc_verification.attempt_count AS kyc_verification_attempt_count, kyc_verification.last_attempt_at AS kyc_verification_last_attempt_at, kyc_verification.rejection_reason AS kyc_verification_rejection_reason, kyc_verification.id_card_verified AS kyc_verification_id_card_verified, kyc_verification.face_match AS kyc_verification_face_match, kyc_verification.face_distance AS kyc_verification_face_distance, kyc_verification.face_verified_at AS kyc_verification_face_verified_at 
-FROM kyc_verification 
-WHERE kyc_verification.user_id = %(user_id_1)s 
- LIMIT %(param_1)s]
-[parameters: {'user_id_1': 39, 'param_1': 1}]
-(Background on this error at: https://sqlalche.me/e/14/e3q8)
- [in D:\do_an_tot_nghiep\thuc_hanh\backend\middleware\error_handler.py:45]
-2025-05-12 21:01:34,119 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 21:02:45,630 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 21:03:15,429 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 21:14:27,092 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
-2025-05-12 21:14:53,949 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 14:57:58,370 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 14:58:29,111 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:06:30,323 WARNING: Thiếu thông tin cần thiết để tạo IdentityInfo: ['date_of_birth'] [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:201]
+2025-05-14 15:16:07,850 WARNING: Thiếu thông tin cần thiết để tạo IdentityInfo: ['date_of_birth'] [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:201]
+2025-05-14 15:20:55,141 WARNING: Thiếu thông tin cần thiết để tạo IdentityInfo: ['date_of_birth'] [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:201]
+2025-05-14 15:27:29,032 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:28:10,287 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:32:38,261 WARNING: Thiếu thông tin cần thiết để tạo IdentityInfo: ['date_of_birth'] [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\kyc.py:201]
+2025-05-14 15:42:11,215 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:44:44,626 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:45:09,584 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:45:58,651 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:46:21,097 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:47:45,768 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 15:49:29,638 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 16:01:50,481 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 16:02:11,485 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-14 16:17:46,746 INFO: Đã lưu ảnh selfie tại: uploads\selfie_45_20250514_161746.jpg [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:53]
+2025-05-14 16:17:46,752 INFO: Đường dẫn ảnh CCCD: D:\do_an_tot_nghiep\thuc_hanh\backend\uploads\id_card_45_front_20250514_160852.jpg [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:57]
+2025-05-14 16:17:46,754 INFO: Sử dụng ngưỡng dung sai: 0.45 [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:61]
+2025-05-14 16:17:46,757 INFO: Sử dụng YOLO để xác minh khuôn mặt [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:64]
+2025-05-14 16:17:49,867 INFO: Xác minh khuôn mặt thành công cho user_id=45, khoảng cách=0.4387481212615967, ngưỡng=0.45 [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:78]

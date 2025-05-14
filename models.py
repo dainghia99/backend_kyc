@@ -58,8 +58,6 @@ class IdentityInfo(db.Model):
     date_of_birth = db.Column(db.Date, nullable=False)
     gender = db.Column(db.String(10), nullable=False)
     nationality = db.Column(db.String(50), nullable=False)
-    residence_address = db.Column(db.String(200), nullable=False)
-    birth_place = db.Column(db.String(100), nullable=False)
     issue_date = db.Column(db.Date, nullable=False)
     expiry_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
