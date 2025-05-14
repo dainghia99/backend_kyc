@@ -61,6 +61,43 @@ def verify_liveness(current_user):
                 current_user.kyc_status = 'verified'
                 current_user.kyc_verified_at = datetime.utcnow()
                 message = 'Xác thực thành công'
+
+                # Kiểm tra và đảm bảo thông tin được lưu vào bảng identity_info
+                if verification.identity_card_front and verification.identity_card_back:
+                    try:
+                        # Kiểm tra xem đã có bản ghi IdentityInfo chưa
+                        identity = IdentityInfo.query.filter_by(user_id=current_user.id).first()
+                        if not identity:
+                            # Lấy thông tin từ mặt trước và mặt sau
+                            front_info = process_id_card(verification.identity_card_front, True)
+                            back_info = process_id_card(verification.identity_card_back, False)
+
+                            # Kết hợp thông tin
+                            combined_info = {**front_info, **back_info}
+
+                            # Kiểm tra xem có đủ thông tin cần thiết không
+                            required_fields = ['id_number', 'full_name', 'date_of_birth', 'gender', 'nationality', 'issue_date', 'expiry_date']
+                            missing_fields = [field for field in required_fields if field not in combined_info or combined_info[field] is None]
+
+                            if not missing_fields:
+                                # Tạo bản ghi IdentityInfo mới
+                                identity = IdentityInfo(
+                                    user_id=current_user.id,
+                                    id_number=combined_info['id_number'],
+                                    full_name=combined_info['full_name'],
+                                    date_of_birth=combined_info['date_of_birth'],
+                                    gender=combined_info['gender'],
+                                    nationality=combined_info['nationality'],
+                                    issue_date=combined_info['issue_date'],
+                                    expiry_date=combined_info['expiry_date'],
+                                    verified_at=verification.verified_at
+                                )
+                                db.session.add(identity)
+                                current_app.logger.info(f"Đã tạo bản ghi IdentityInfo cho user ID {current_user.id}")
+                            else:
+                                current_app.logger.warning(f"Thiếu thông tin cần thiết để tạo IdentityInfo: {missing_fields}")
+                    except Exception as e:
+                        current_app.logger.error(f"Lỗi khi tạo bản ghi IdentityInfo: {str(e)}")
             else:
                 verification.status = 'failed'
                 verification.rejection_reason = f'Không phát hiện đủ số lần nháy mắt (phát hiện {results["blink_count"]} lần, yêu cầu {current_app.config["MIN_BLINK_COUNT"]} lần)'
