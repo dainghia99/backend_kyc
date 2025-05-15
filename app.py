@@ -108,6 +108,13 @@ def create_app(config_name='development'):
     def index():
         return {"message": "KYC API Server"}
 
+    # Thêm route để phục vụ các file tĩnh từ thư mục uploads
+    from flask import send_from_directory
+
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        return send_from_directory(app.config.get('UPLOAD_FOLDER', 'uploads'), filename)
+
     return app
 
 if __name__ == '__main__':

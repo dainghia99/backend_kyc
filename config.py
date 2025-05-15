@@ -33,7 +33,10 @@ class Config:
     @staticmethod
     def init_app(app):
         # Ensure upload directory exists
-        os.makedirs(os.path.join(app.root_path, Config.UPLOAD_FOLDER), exist_ok=True)
+        upload_path = os.path.join(app.root_path, Config.UPLOAD_FOLDER)
+        os.makedirs(upload_path, exist_ok=True)
+        app.config['UPLOAD_FOLDER'] = upload_path
+        print(f"Upload directory: {upload_path}")
 
 class DevelopmentConfig(Config):
     DEBUG = True
