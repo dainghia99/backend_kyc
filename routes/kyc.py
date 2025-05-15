@@ -54,6 +54,10 @@ def verify_liveness(current_user):
         verification.blink_count = results['blink_count']
         verification.last_attempt_at = datetime.utcnow()
 
+        # Lưu tên file video nếu có
+        if 'video_filename' in results:
+            verification.selfie_path = results['video_filename']
+
         if results['liveness_score'] > current_app.config['MIN_LIVENESS_SCORE']:
             if results['blink_count'] >= current_app.config['MIN_BLINK_COUNT']:
                 verification.status = 'verified'
@@ -69,8 +73,10 @@ def verify_liveness(current_user):
                         identity = IdentityInfo.query.filter_by(user_id=current_user.id).first()
                         if not identity:
                             # Lấy thông tin từ mặt trước và mặt sau
-                            front_info = process_id_card(verification.identity_card_front, True)
-                            back_info = process_id_card(verification.identity_card_back, False)
+                            front_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_front)
+                            back_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_back)
+                            front_info = process_id_card(front_path, True)
+                            back_info = process_id_card(back_path, False)
 
                             # Kết hợp thông tin
                             combined_info = {**front_info, **back_info}
@@ -199,21 +205,25 @@ def verify_id_card(current_user):
                 'message': "Vui lòng chụp lại ảnh CCCD rõ nét hơn, đảm bảo đủ ánh sáng và không bị lóa."
             }), 400
 
-        # Update verification record
+        # Update verification record - Chỉ lưu tên file thay vì đường dẫn đầy đủ
         if is_front:
-            verification.identity_card_front = filepath
+            verification.identity_card_front = filename
         else:
-            verification.identity_card_back = filepath
+            verification.identity_card_back = filename
 
         # If we have both sides, create/update identity info
         if verification.identity_card_front and verification.identity_card_back:
             # Lưu thông tin từ mặt trước và mặt sau
             try:
+                # Lấy đường dẫn đầy đủ để xử lý ảnh
+                front_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_front)
+                back_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_back)
+
                 # Lấy thông tin từ mặt trước
-                front_info = process_id_card(verification.identity_card_front, True)
+                front_info = process_id_card(front_path, True)
 
                 # Lấy thông tin từ mặt sau (hoặc sử dụng thông tin hiện tại nếu đang xử lý mặt sau)
-                back_info = id_info if not is_front else process_id_card(verification.identity_card_back, False)
+                back_info = id_info if not is_front else process_id_card(back_path, False)
 
                 # Kết hợp thông tin
                 combined_info = {**front_info, **back_info}

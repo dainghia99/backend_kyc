@@ -517,13 +517,17 @@ def process_video_for_liveness(video_file):
     else:
         # Nếu là file từ request, lưu vào thư mục upload
         timestamp = int(time.time())
-        video_path = os.path.join(upload_dir, f'liveness_{timestamp}.mp4')
+        filename = f'liveness_{timestamp}.mp4'
+        video_path = os.path.join(upload_dir, filename)
 
         # Lưu video để có thể phân tích và debug sau này
         with open(video_path, 'wb') as f:
             f.write(video_file.read())
 
         print(f"Đã lưu video vào: {video_path}")
+
+        # Trả về tên file để lưu vào cơ sở dữ liệu
+        return_filename = os.path.join('liveness', filename)
 
     try:
         # Ghi log thông tin video
@@ -559,6 +563,10 @@ def process_video_for_liveness(video_file):
         # Không xóa video để có thể debug sau này
         # Chỉ xóa các video cũ hơn 7 ngày
         cleanup_old_videos(upload_dir, days=7)
+
+        # Thêm tên file vào kết quả nếu có
+        if 'return_filename' in locals():
+            results['video_filename'] = return_filename
 
         return results
     except Exception as e:
