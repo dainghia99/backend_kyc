@@ -2,7 +2,6 @@ from flask import Blueprint, jsonify, request, current_app
 from models import db, User, KYCVerification, IdentityInfo
 from utils.auth import token_required
 from datetime import datetime
-from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -229,24 +228,6 @@ def get_kyc_requests(current_user):
         if status == 'all' or not status:
             # Nếu lọc "all" hoặc không có trạng thái, truy vấn từ bảng User để lấy tất cả người dùng
             query = User.query.filter(User.role != 'superadmin')  # Loại trừ tài khoản superadmin
-        elif status == 'rejected':
-            # Đặc biệt xử lý trường hợp "rejected" - lấy tất cả user có kyc_status='rejected'
-            # Kiểm tra xem có user nào có trạng thái rejected không
-            all_users = User.query.all()
-            current_app.logger.info(f"Tổng số user trong hệ thống: {len(all_users)}")
-            for user in all_users:
-                current_app.logger.info(f"User ID: {user.id}, Email: {user.email}, KYC Status: {user.kyc_status}")
-
-            # Tìm user có email test@gmail.com và cập nhật trạng thái
-            test_user = User.query.filter_by(email='test@gmail.com').first()
-            if test_user:
-                test_user.kyc_status = 'rejected'
-                db.session.commit()
-                current_app.logger.info(f"Đã cập nhật trạng thái của user {test_user.email} thành rejected")
-
-            # Lấy danh sách user bị từ chối
-            query = User.query.filter_by(kyc_status='rejected')
-            current_app.logger.info(f"Đang lọc theo trạng thái rejected, tìm thấy {query.count()} user")
         elif status == 'pending' or status == 'verified':
             # Nếu lọc theo trạng thái cụ thể, truy vấn từ bảng User
             query = User.query.filter_by(kyc_status=status)
@@ -424,12 +405,6 @@ def reject_kyc(current_user, kyc_id):
             # Đảm bảo thông tin từ chối được lưu vào cả bảng User và KYCVerification
             current_app.logger.info(f"Từ chối KYC cho user {user.email} với lý do: {reason}")
 
-        # Kiểm tra xem user có email test@gmail.com có tồn tại không
-        test_user = User.query.filter_by(email='test@gmail.com').first()
-        if test_user:
-            test_user.kyc_status = 'rejected'
-            current_app.logger.info(f"Đã cập nhật trạng thái của user {test_user.email} thành rejected")
-
         db.session.commit()
 
         return jsonify({
@@ -549,61 +524,7 @@ def get_kyc_request_details(current_user, kyc_id):
         current_app.logger.error(f"Error getting KYC request details: {str(e)}")
         return jsonify({'error': 'Không thể lấy thông tin chi tiết yêu cầu KYC'}), 500
 
-@admin_bp.route('/update-test-user', methods=['POST'])
-@admin_required
-def update_test_user(current_user):
-    """
-    Cập nhật trạng thái của user test@gmail.com thành rejected
-    """
-    try:
-        # Tìm user có email test@gmail.com
-        test_user = User.query.filter_by(email='test@gmail.com').first()
 
-        if not test_user:
-            # Nếu không tìm thấy, tạo mới user
-            test_user = User(
-                email='test@gmail.com',
-                password=generate_password_hash('Test12345@'),
-                kyc_status='rejected',
-                role='user'
-            )
-            db.session.add(test_user)
-            db.session.commit()
-            current_app.logger.info(f"Đã tạo mới user test@gmail.com với trạng thái rejected")
-        else:
-            # Nếu tìm thấy, cập nhật trạng thái
-            test_user.kyc_status = 'rejected'
-            db.session.commit()
-            current_app.logger.info(f"Đã cập nhật trạng thái của user {test_user.email} thành rejected")
-
-        # Tạo bản ghi KYCVerification nếu chưa có
-        kyc = KYCVerification.query.filter_by(user_id=test_user.id).first()
-        if not kyc:
-            kyc = KYCVerification(
-                user_id=test_user.id,
-                status='rejected',
-                rejection_reason='Không phát hiện đủ số lần nháy mắt (phát hiện 2 lần, yêu cầu 3 lần)'
-            )
-            db.session.add(kyc)
-            db.session.commit()
-            current_app.logger.info(f"Đã tạo mới bản ghi KYCVerification cho user {test_user.email}")
-        else:
-            kyc.status = 'rejected'
-            kyc.rejection_reason = 'Không phát hiện đủ số lần nháy mắt (phát hiện 2 lần, yêu cầu 3 lần)'
-            db.session.commit()
-            current_app.logger.info(f"Đã cập nhật bản ghi KYCVerification cho user {test_user.email}")
-
-        return jsonify({
-            'message': 'Cập nhật thành công',
-            'user_id': test_user.id,
-            'email': test_user.email,
-            'kyc_status': test_user.kyc_status
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating test user: {str(e)}")
-        return jsonify({'error': 'Không thể cập nhật user test'}), 500
 
 @admin_bp.route('/statistics', methods=['GET'])
 @admin_required
