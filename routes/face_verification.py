@@ -53,7 +53,7 @@ def verify_face(current_user):
         current_app.logger.info(f"Đã lưu ảnh selfie tại: {selfie_path}")
 
         # Lấy đường dẫn đến ảnh mặt trước CCCD
-        id_card_path = os.path.join(current_app.root_path, verification.identity_card_front)
+        id_card_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_front)
         current_app.logger.info(f"Đường dẫn ảnh CCCD: {id_card_path}")
 
         # Xác minh sự khớp của khuôn mặt
@@ -64,8 +64,8 @@ def verify_face(current_user):
         current_app.logger.info("Sử dụng YOLO để xác minh khuôn mặt")
         result = verify_face_match(id_card_path, selfie_path, tolerance)
 
-        # Cập nhật bản ghi xác minh
-        verification.selfie_path = selfie_path
+        # Cập nhật bản ghi xác minh - Chỉ lưu tên file thay vì đường dẫn đầy đủ
+        verification.selfie_path = filename
         verification.face_match = result['match']
         verification.face_distance = result['distance']
         verification.face_verified_at = datetime.now()

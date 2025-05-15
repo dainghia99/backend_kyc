@@ -292,9 +292,19 @@ def get_kyc_requests(current_user):
             last_attempt_at = None
 
             if kyc:
+                # Đảm bảo đường dẫn ảnh được tạo đúng cách
                 id_card_front_url = f"/uploads/{kyc.identity_card_front}" if kyc.identity_card_front else None
                 id_card_back_url = f"/uploads/{kyc.identity_card_back}" if kyc.identity_card_back else None
-                selfie_url = f"/uploads/{kyc.selfie_path}" if kyc.selfie_path else None
+
+                # Xử lý đường dẫn ảnh selfie
+                if kyc.selfie_path:
+                    # Kiểm tra xem đường dẫn đã có tiền tố /uploads/ chưa
+                    if kyc.selfie_path.startswith('/uploads/'):
+                        selfie_url = kyc.selfie_path
+                    else:
+                        selfie_url = f"/uploads/{kyc.selfie_path}"
+                else:
+                    selfie_url = None
                 rejection_reason = kyc.rejection_reason
                 created_at = kyc.created_at or user.created_at
                 verified_at = kyc.verified_at or user.kyc_verified_at
@@ -493,7 +503,16 @@ def get_kyc_request_details(current_user, kyc_id):
         # Chuẩn bị đường dẫn ảnh
         id_card_front_url = f"/uploads/{kyc.identity_card_front}" if kyc.identity_card_front else None
         id_card_back_url = f"/uploads/{kyc.identity_card_back}" if kyc.identity_card_back else None
-        selfie_url = f"/uploads/{kyc.selfie_path}" if kyc.selfie_path else None
+
+        # Xử lý đường dẫn ảnh selfie
+        if kyc.selfie_path:
+            # Kiểm tra xem đường dẫn đã có tiền tố /uploads/ chưa
+            if kyc.selfie_path.startswith('/uploads/'):
+                selfie_url = kyc.selfie_path
+            else:
+                selfie_url = f"/uploads/{kyc.selfie_path}"
+        else:
+            selfie_url = None
 
         kyc_data = {
             'id': kyc.id,

@@ -74,11 +74,11 @@ def process_image_direct(current_user):
             if not verification:
                 verification = KYCVerification(user_id=current_user.id)
 
-            # Cập nhật đường dẫn ảnh
+            # Cập nhật đường dẫn ảnh - Chỉ lưu tên file thay vì đường dẫn đầy đủ
             if is_front:
-                verification.identity_card_front = full_path
+                verification.identity_card_front = image_path
             else:
-                verification.identity_card_back = full_path
+                verification.identity_card_back = image_path
 
             db.session.add(verification)
             db.session.commit()
@@ -173,11 +173,11 @@ def upload_and_process(current_user):
         if not verification:
             verification = KYCVerification(user_id=current_user.id)
 
-        # Cập nhật đường dẫn ảnh
+        # Cập nhật đường dẫn ảnh - Chỉ lưu tên file thay vì đường dẫn đầy đủ
         if is_front:
-            verification.identity_card_front = filepath
+            verification.identity_card_front = filename
         else:
-            verification.identity_card_back = filepath
+            verification.identity_card_back = filename
 
         db.session.add(verification)
         db.session.commit()
@@ -191,7 +191,7 @@ def upload_and_process(current_user):
         return jsonify({
             'message': 'Tải lên và xử lý ảnh thành công',
             'id_info': id_info,
-            'image_path': os.path.basename(filepath)  # Trả về tên file để có thể sử dụng lại sau này
+            'image_path': filename  # Trả về tên file để có thể sử dụng lại sau này
         }), 200
 
     except Exception as e:
