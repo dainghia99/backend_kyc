@@ -17,10 +17,10 @@ class Config:
     ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'webm'}
 
     # Session configuration
-    SESSION_LIFETIME = timedelta(days=7)  # Token expires after 7 days
+    SESSION_LIFETIME = timedelta(days=7)
 
     # CORS configuration
-    CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:19006', 'http://192.168.1.7:19006', '*']  # Add your frontend URLs
+    CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:19006', 'http://192.168.1.7:19006', '*'] 
 
     # KYC configuration
     MIN_BLINK_COUNT = int(os.environ.get('MIN_BLINK_COUNT', 3))  # Chỉ yêu cầu 3 nháy mắt
@@ -28,7 +28,7 @@ class Config:
     MAX_VIDEO_FILE_SIZE = int(os.environ.get('MAX_VIDEO_FILE_SIZE', 16 * 1024 * 1024)) # 16MB max video file size
 
     # Face verification configuration
-    FACE_MATCH_TOLERANCE = float(os.environ.get('FACE_MATCH_TOLERANCE', 0.45))  # Ngưỡng so khớp khuôn mặt (thấp hơn = nghiêm ngặt hơn)
+    FACE_MATCH_TOLERANCE = float(os.environ.get('FACE_MATCH_TOLERANCE', 0.45))  
 
     @staticmethod
     def init_app(app):
