@@ -22,3 +22,7 @@
 2025-05-15 21:28:13,666 INFO: Sử dụng ngưỡng dung sai: 0.45 [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:61]
 2025-05-15 21:28:13,667 INFO: Sử dụng YOLO để xác minh khuôn mặt [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:64]
 2025-05-15 21:28:15,149 INFO: Xác minh khuôn mặt thành công cho user_id=44, khoảng cách=0.2882370948791504, ngưỡng=0.45 [in D:\do_an_tot_nghiep\thuc_hanh\backend\routes\face_verification.py:78]
+2025-05-19 08:51:05,524 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-19 08:51:23,482 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-19 09:19:34,549 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
+2025-05-19 09:19:47,912 INFO: Application startup [in D:\do_an_tot_nghiep\thuc_hanh\backend\app.py:70]
