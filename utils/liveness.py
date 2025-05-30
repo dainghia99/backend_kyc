@@ -368,9 +368,9 @@ def detect_blinks(video_path):
             with open(os.path.join(debug_dir, "blink_verification.txt"), "a", encoding="utf-8") as f:
                 f.write(f"Blink count sau khi điều chỉnh: {blink_counter}\n")
 
-    # Điều chỉnh ngưỡng nháy mắt dựa trên độ dài video
-    min_blinks = 3  # Chỉ yêu cầu tối thiểu 1 nháy mắt
-    max_blinks = 20  # Tăng giới hạn tối đa lên cao
+    
+    min_blinks = 3  
+    max_blinks = 20  
 
     # Ghi log ngưỡng nháy mắt
     with open(os.path.join(debug_dir, "blink_thresholds.txt"), "w", encoding="utf-8") as f:
