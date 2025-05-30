@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from models import db, KYCVerification, User
 from utils.auth import token_required
-from utils.face_verification_pure_yolo import verify_face_match
+from utils.face_verification_deepface import verify_face_match
 from middleware.rate_limit import kyc_rate_limit
 from middleware.security import is_valid_file_extension, is_valid_file_size, sanitize_file_name
 from datetime import datetime
@@ -56,47 +56,46 @@ def verify_face(current_user):
         id_card_path = os.path.join(current_app.config['UPLOAD_FOLDER'], verification.identity_card_front)
         current_app.logger.info(f"Đường dẫn ảnh CCCD: {id_card_path}")
 
-        # Xác minh sự khớp của khuôn mặt
-        tolerance = current_app.config.get('FACE_MATCH_TOLERANCE', 0.45)
-        current_app.logger.info(f"Sử dụng ngưỡng dung sai: {tolerance}")
-
-        # Sử dụng YOLO để xác minh khuôn mặt
-        current_app.logger.info("Sử dụng YOLO để xác minh khuôn mặt")
-        result = verify_face_match(id_card_path, selfie_path, tolerance)
+        # Sử dụng DeepFace để xác minh khuôn mặt
+        current_app.logger.info("Sử dụng DeepFace để xác minh khuôn mặt")
+        result = verify_face_match(id_card_path, selfie_path)
 
         # Cập nhật bản ghi xác minh - Chỉ lưu tên file thay vì đường dẫn đầy đủ
         verification.selfie_path = filename
-        verification.face_match = result['match']
-        verification.face_distance = result['distance']
+        
+        is_verified = result.get('verified', False) # Get verified status
+        verification.face_match = is_verified # Assign boolean result
+        verification.face_distance = result.get('distance', None)
         verification.face_verified_at = datetime.now()
 
-        if not result['match']:
+        current_app.logger.debug(f"Updating verification record: selfie_path={verification.selfie_path}, face_match={verification.face_match}, face_distance={verification.face_distance}, face_verified_at={verification.face_verified_at}")
+
+        if not is_verified:
             verification.status = 'failed'
             verification.rejection_reason = 'Xác minh không thành công: khuôn mặt không khớp với CCCD'
-            current_app.logger.warning(f"Xác minh khuôn mặt thất bại cho user_id={current_user.id}, khoảng cách={result['distance']}, ngưỡng={tolerance}")
-        else:
-            current_app.logger.info(f"Xác minh khuôn mặt thành công cho user_id={current_user.id}, khoảng cách={result['distance']}, ngưỡng={tolerance}")
+        # else: # No need for an else block if no specific action is needed for success beyond assignment and response
+            # Removed problematic log here
 
         db.session.commit()
 
         # Chuẩn bị phản hồi - đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
         response = {
-            'success': bool(result['success']),
-            'match': bool(result['match']),
-            'message': result['message'],
+            'success': bool(is_verified),
+            'match': bool(is_verified),
+            'message': result.get('message', 'Xác minh hoàn tất'), # Use message from deepface or default
             'selfie_path': os.path.basename(selfie_path)
         }
 
         # Thêm thông tin debug nếu có
-        if 'debug_info' in result:
-            response['debug_info'] = result['debug_info']
+        # if 'debug_info' in result: # Keep if needed, but simplified for now
+        #     response['debug_info'] = result['debug_info']
 
         # Mã trạng thái dựa trên kết quả
-        status_code = 200 if bool(result['match']) else 400
+        status_code = 200 # Always return 200 OK, result is in JSON body
 
-        # Thêm thông báo rõ ràng cho người dùng
-        if not result['match']:
-            response['error'] = 'Xác minh không thành công: khuôn mặt trong ảnh selfie không khớp với khuôn mặt trong CCCD. Vui lòng thử lại với ảnh rõ nét hơn hoặc đảm bảo bạn đang sử dụng CCCD của chính mình.'
+        # Thêm thông báo rõ ràng cho người dùng trong trường hợp thất bại
+        if not is_verified:
+            response['error'] = result.get('message', 'Xác minh không thành công: khuôn mặt trong ảnh selfie không khớp với khuôn mặt trong CCCD. Vui lòng thử lại với ảnh rõ nét hơn hoặc đảm bảo bạn đang sử dụng CCCD của chính mình.') # Use deepface message or default
 
         return jsonify(response), status_code
 
@@ -124,7 +123,7 @@ def get_face_verification_status(current_user):
             'selfie_uploaded': False
         }), 200
 
-    # Đảm bảo tất cả các giá trị boolean được chuyển đổi sang kiểu boolean Python gốc
+    
     return jsonify({
         'face_verified': bool(verification.face_verified_at is not None),
         'face_match': bool(verification.face_match) if verification.face_match is not None else False,
